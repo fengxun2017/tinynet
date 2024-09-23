@@ -39,14 +39,13 @@ public:
     void stop(void);
 
 private:
-    void handle_new_connection(std::shared_ptr<TcpConnection>& conn);
+    void handle_new_connection(TcpConnPtr& conn);
 
-    void handle_disconnected(const TcpConnection& conn);
+    void handle_disconnected(TcpConnPtr& conn);
 
-    void handle_message(const TcpConnection& conn);
+    void handle_message(TcpConnPtr& conn);
 
-    void handle_write_complete(const TcpConnection& conn);
-    bool conn_check_and_remove(TcpConnection& conn);
+    void handle_write_complete(TcpConnPtr& conn);
 
     TcpAcceptor _acceptor;
     std::unordered_map<int, std::shared_ptr<TcpConnection>> _connections;

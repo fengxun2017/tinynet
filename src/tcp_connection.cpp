@@ -6,12 +6,11 @@ namespace tinynet
 {
 
 
-TcpConnection(int sockfd, const std::string& client_ip, int client_port,
+TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int client_port,
                 const std::string& server_ip, int server_port);
     : _sockfd(sockfd), _client_ip(client_ip), _client_port(client_port),
       _server_ip(server_ip), _server_port(server_port)
 {
-    
     _channel.set_reab_callback
     _channel.set_write_callback
     _channel.set_close_callback
@@ -19,7 +18,7 @@ TcpConnection(int sockfd, const std::string& client_ip, int client_port,
 
 }
 
-TcpConnection::~TcpConnection() {
+TcpConnection::~TcpConnection(void) {
     close(_sockfd);
 }
 

@@ -9,17 +9,20 @@
 namespace tinynet
 {
 
+class TcpConnection;
+using TcpConnPtr = std::shard_ptr<TcpConnection>
+
 class TcpConnection {
 public:
     TcpConnection(int sockfd, const std::string& client_ip, int client_port,
                 const std::string& server_ip, int server_port);
 
-    ~TcpConnection();
+    ~TcpConnection(void);
 
     void write_data(const void* buffer, size_t length);
-    void set_disconnected_cb(std::function<void(TcpConnection &conn)> &disconected_cb) {_disconected_cb = disconected_cb;};
-    void set_onmessage_cb(std::function<void(TcpConnection &conn)> &on_message_cb) {_on_message_cb = on_message_cb;};
-    void set_write_complete_cb(std::function<void(TcpConnection &conn)> & write_complete_cb) { _write_complete_cb = write_complete_cb;}
+    void set_disconnected_cb(std::function<void(TcpConnPtr &)> &disconected_cb) {_disconected_cb = disconected_cb;};
+    void set_onmessage_cb(std::function<void(TcpConnPtr &)> &on_message_cb) {_on_message_cb = on_message_cb;};
+    void set_write_complete_cb(std::function<void(TcpConnPtr &)> & write_complete_cb) { _write_complete_cb = write_complete_cb;}
     int get_fd(void) {return _channel.get_fd();}
 
     std::string get_client_ip(void);
@@ -37,9 +40,9 @@ private:
     int _client_port;
     std::string _server_ip;
     int _server_port;
-    std::function<void(TcpConnection &conn)> _write_complete_cb = nullptr;
-    std::function<void(TcpConnection &conn)> _on_message_cb = nullptr;
-    std::function<void(TcpConnection &conn)> _disconected_cb = nullptr;
+    std::function<void(TcpConnPtr &)> _write_complete_cb = nullptr;
+    std::function<void(TcpConnPtr &)> _on_message_cb = nullptr;
+    std::function<void(TcpConnPtr &)> _disconected_cb = nullptr;
 
 };
 

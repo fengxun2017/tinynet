@@ -21,7 +21,7 @@ public:
 
     void set_reab_callback(EventCallback read_cb) {_read_cb = read_cb;}
     void set_write_callback(EventCallback write_cb) {_write_cb = write_cb;}
-    void set_close_callback(EventCallback close_cb) {_read_cb = close_cb;}
+    void set_close_callback(EventCallback close_cb) {_close_cb = close_cb;}
     void set_error_callback(EventCallback error_cb) {_error_cb = error_cb;}
 
     void handle_event(void);

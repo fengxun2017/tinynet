@@ -7,12 +7,6 @@
 namespace tinynet
 {
 
-typedef enum 
-{
-    EVENT_ON_MESSAGE = 0x01,
-    EVENT_WRITE_COMPLETE,
-    EVENT_DISCONNECTED
-}EventType;
 TcpServer::TcpServer(const std::string& ip, int port)
     : _acceptor(ip, port)
 {
@@ -39,31 +33,25 @@ void TcpServer::stop(void)
     _connections.clear();
 }
 
-void TcpServer::handle_new_connection(std::shared_ptr<TcpConnection>& new_conn)
+void TcpServer::handle_new_connection(TcpConnPtr& new_conn)
 {
     if(nullptr != new_conn)
     {
-        auto item = _connections.find(conn.get_fd());
+#ifdef TINYNET_BUDEG
+        auto item = _connections.find(new_conn->get_fd());
         if (item != _connections.end())
         {
             LOG(ERROR) << "The same file descriptor already exists" << std::endl; 
         }
         else
+#endif
         {
             LOG(INFO) << "The connection from " << new_conn->get_client_ip() << ":" << new_conn->get_client_port() << " is established" << std::endl;
             _connections.emplace(std::make_pair(new_conn.get_fd(), new_conn));
-            if (_disconnected_cb)
-            {
-                new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this));
-            }
-            if (_on_message_cb)
-            {
-                new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this));
-            }
-            if (_write_complete_cb)
-            {
-                new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this));
-            }
+
+            new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this));
+            new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this));
+            new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this));
 
             if (_newconn_cb) {
                 _newconn_cb(*new_conn);
@@ -77,17 +65,16 @@ void TcpServer::handle_new_connection(std::shared_ptr<TcpConnection>& new_conn)
 }
 
 
-void TcpServer::handle_disconnected(TcpConnection& conn)
+void TcpServer::handle_disconnected(TcpConnPtr& conn)
 {
-    LOG(INFO) << "the connection with " << conn.get_client_ip() << ":" << conn.get_client_port() << "is disconnected\n";
-
-    auto item = _connections.find(conn.get_fd());
+    LOG(INFO) << "the connection with " << conn->get_client_ip() << ":" << conn->get_client_port() << "is disconnected\n";
+    auto item = _connections.find(conn->get_fd());
     if (item != _connections.end())
     {
         (void)_connections.erase(item);
 
         if (_disconnected_cb) {
-            _disconnected_cb(conn);
+            _disconnected_cb(*conn);
         }
     }
     else
@@ -97,37 +84,45 @@ void TcpServer::handle_disconnected(TcpConnection& conn)
     }
 }
 
-void TcpServer::handle_message(TcpConnection& conn)
+void TcpServer::handle_message(TcpConnPtr& conn)
 {
-    LOG(INFO) << conn.get_client_ip() << ":" << conn.get_client_port() << "receives data\n";
-    auto item = _connections.find(conn.get_fd());
-    if (item != _connections.end())
-    {
-        if (_on_message_cb) {
-            _on_message_cb(conn);
-        }
-    }
-    else
+    LOG(INFO) << conn->get_client_ip() << ":" << conn->get_client_port() << "receives data\n";
+#ifdef TINYNET_BUDEG
+    auto item = _connections.find(conn->get_fd());
+    if (item == _connections.end())
     {
         LOG(ERROR) << "error in TcpServer::handle_message, "
                 << "the connection was not found from the connection collection " << std::endl;
+
+    }
+    else
+#endif
+    {
+        if (_on_message_cb)
+        {
+            _on_message_cb(*conn);
+        }
     }
 }
 
-void TcpServer::handle_write_complete(TcpConnection& conn)
+void TcpServer::handle_write_complete(TcpConnPtr& conn)
 {
-    LOG(INFO) << "the write operation to connect " << conn.get_client_ip() << ":" << conn.get_client_port() << "is complete\n";
-    auto item = _connections.find(conn.get_fd());
-    if (item != _connections.end())
-    {
-        if (_write_complete_cb) {
-            _write_complete_cb(conn);
-        }
-    }
-    else
+    LOG(INFO) << "the write operation to connect " << conn->get_client_ip() << ":" << conn->get_client_port() << "is complete\n";
+#ifdef TINYNET_BUDEG
+    auto item = _connections.find(conn->get_fd());
+    if (item == _connections.end())
     {
         LOG(ERROR) << "error in TcpServer::handle_write_complete, "
                 << "the connection was not found from the connection collection " << std::endl;
+
+    }
+    else
+#endif
+    {
+        if (_write_complete_cb)
+        {
+            _write_complete_cb(*conn);
+        }
     }
 }
 
