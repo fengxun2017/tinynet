@@ -6,8 +6,10 @@ namespace tinynet
 {
 
 
-TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int client_port)
-    : _sockfd(sockfd), _client_ip(client_ip), _client_port(client_port)
+TcpConnection(int sockfd, const std::string& client_ip, int client_port,
+                const std::string& server_ip, int server_port);
+    : _sockfd(sockfd), _client_ip(client_ip), _client_port(client_port),
+      _server_ip(server_ip), _server_port(server_port)
 {
 
 }

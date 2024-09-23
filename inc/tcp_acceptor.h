@@ -2,8 +2,6 @@
 #define _TINYNET_TCP_ACCEPTOR_H_
 #include <iostream>
 #include <string>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include "io_socket.h"
 
 namespace tinynet
@@ -18,7 +16,7 @@ public:
     int accept_connection();
 
 private:
-    IoSocket _io_socket;
+    IoSocket _acceptor_socket;
     std::string _ip;
     int _port;
 };

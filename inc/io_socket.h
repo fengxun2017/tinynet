@@ -16,7 +16,7 @@ public:
     ~IoSocket();
 
     bool bind_socket(const std::string& self_ip, int self_port);
-    bool listen_socket(int backlog = 5);
+    bool listen_socket(int backlog = 10);
     int accept_socket();
     bool connect_socket(const std::string& remote_ip, int remote_port);
     ssize_t write_data(const void* buffer, size_t length);

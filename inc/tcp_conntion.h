@@ -8,7 +8,8 @@ namespace tinynet
 
 class TcpConnection {
 public:
-    TcpConnection(int sockfd, const std::string& client_ip, int client_port);
+    TcpConnection(int sockfd, const std::string& client_ip, int client_port,
+                const std::string& server_ip, int server_port);
 
     ~TcpConnection();
 
@@ -25,6 +26,9 @@ private:
     int _sockfd;
     std::string _client_ip;
     int _client_port;
+    std::string _server_ip;
+    int _server_port;
+
 };
 
 }
