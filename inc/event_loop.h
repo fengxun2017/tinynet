@@ -15,15 +15,12 @@ public:
     EventLoop(void);
     ~EventLoop() {}
 
-    void loop() ;
+    void loop();
 
     void quit();
 
-    void add_channel(IoChannel* channel);
-
-    void remove_channel(IoChannel* channel);
-
-    void update_channel(IoChannel* channel);
+    std::shared_ptr<IoPoller> get_poller(void) {return _poller;}
+    
 
 private:
     bool _quit = false;

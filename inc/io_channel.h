@@ -15,7 +15,7 @@ public:
     enum ChannelState { IN_POLLER, NOTIN_POLER };
     using EventCallback = std::function<void(void)> ;
 
-    IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name);
+    IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string &name);
     ~IoChannel();
 
     void set_reab_callback(EventCallback read_cb) {_read_cb = read_cb;}

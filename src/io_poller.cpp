@@ -14,7 +14,7 @@ static const char * error_to_str (int errnum)
     return strerror_r(errnum, error_str, sizeof(error_str));
 }
 
-IoPoller::IoPoller(void) :_event_wait(10)
+IoPoller::IoPoller(void) :_event_wait(3)
 {
     _poll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (!check_fd(_poll_fd))
@@ -69,7 +69,7 @@ void IoPoller::poll(int timeout_ms, Channels &active_channels)
     }
     else if (0 == num)
     {
-        LOG(INFO) << "epoll_wait timeout" << std::endl;
+        LOG(DEBUG) << "epoll_wait timeout" << std::endl;
     }
     else
     {

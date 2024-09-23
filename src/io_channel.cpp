@@ -13,6 +13,7 @@ void IoChannel::update_poll_cfg(void)
 {
     if (nullptr == _poller)
     {
+        LOG(ERROR) << "poller is null, in IoChannel::update_poll_cfg" << std::endl;
         return ;
     }
 
