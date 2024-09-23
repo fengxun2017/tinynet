@@ -49,7 +49,7 @@ private:
     void handle_write_complete(TcpConnPtr& conn);
     std::string _name;
     TcpAcceptor _acceptor;
-    std::unordered_map<int, std::shared_ptr<TcpConnection>> _connections;
+    std::unordered_map<int, TcpConnPtr> _connections;
     NewConnCb _newconn_cb = nullptr;
     DisconnectedCb _disconnected_cb = nullptr;
     OnMessageCb _on_message_cb = nullptr;

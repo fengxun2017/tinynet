@@ -12,6 +12,7 @@ TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std
 {
     _event_loop = event_loop
     _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this));
+    LOG(DEBUG) << "Service:" << ip << port <<" is created" << std::endl;
 }
 
 TcpServer::~TcpServer(void)
@@ -42,19 +43,22 @@ void TcpServer::handle_new_connection(TcpConnPtr& new_conn)
         auto item = _connections.find(new_conn->get_fd());
         if (item != _connections.end())
         {
-            LOG(ERROR) << "The same file descriptor already exists" << std::endl; 
+            LOG(ERROR) << "The same file descriptor already exists! something wrong" << std::endl; 
         }
         else
 #endif
         {
-            LOG(INFO) << "The connection from " << new_conn->get_client_ip() << ":" << new_conn->get_client_port() << " is established" << std::endl;
-            _connections.emplace(std::make_pair(new_conn.get_fd(), new_conn));
+            LOG(INFO) << "The connection from " << new_conn->get_client_ip() 
+                << ":" << new_conn->get_client_port() << " is established" 
+                << std::endl;
+            _connections.emplace(std::make_pair(new_conn->get_fd(), new_conn));
 
             new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this));
             new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this));
             new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this));
 
-            if (_newconn_cb) {
+            if (_newconn_cb) 
+            {
                 _newconn_cb(*new_conn);
             }
         }

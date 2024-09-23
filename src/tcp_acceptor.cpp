@@ -18,7 +18,7 @@ TcpAcceptor::TcpAcceptor(EventLoop *event_loop, const std::string& ip, int port,
       _port(port),
       _channel(_acceptor_socket.get_fd(), _event_loop->get_poller(), _name + "_channel")
 {
-
+    LOG(DEBUG) << "Channel " << _name << std::endl;
 }
 
 TcpAcceptor::~TcpAcceptor() {}
@@ -29,44 +29,44 @@ bool TcpAcceptor::start()
         std::cerr << "Failed to bind socket to " << _ip << ":" << _port << std::endl;
         return false;
     }
-
     LOG(DEBUG) << "bind to" << _ip << ":" << _port << std::endl;
+
     if (!_acceptor_socket.listen_socket()) {
         std::cerr << "Failed to listen on socket" << std::endl;
         return false;
     }
-    LOG(DEBUG) << "skcket listen success" << std::endl;
+    LOG(DEBUG) << "socket listen success" << std::endl;
 
     _channel.set_reab_callback(std::bind(&TcpAcceptor::accept_connection, this));
     _channel.enable_read();
 
+    LOG(INFO) << "server: " << _ip << ":" << _port << " start!" << std::endl;
     return true;
 }
 
 void TcpAcceptor::accept_connection(void)
 {
-    std::shared_ptr<TcpConnection> new_conn = nullptr;
-    int client_sockfd = _acceptor_socket.accept_socket();
-    struct sockaddr_in client_addr;
-    socklen_t client_len = sizeof(client_addr);
+    TcpConnPtr new_conn = nullptr;
+    // struct sockaddr_in client_addr;
+    // socklen_t client_len = sizeof(client_addr);
     std::string client_ip = "UNKNOW";
     int client_port = 0;
+    int client_sockfd = _acceptor_socket.accept_socket(client_ip, client_port);
 
     if (check_fd(client_sockfd))
     {
-        if (0 == getpeername(client_sockfd, (struct sockaddr*)&client_addr, &client_len))
-        {
-            char ipv4_str[INET_ADDRSTRLEN] = {0};
-            if(NULL != inet_ntop(AF_INET, &(client_addr.sin_addr.s_addr), ipv4_str, INET_ADDRSTRLEN))
-            {
-                client_ip = std::string(ipv4_str);
-                client_port = ntohs(client_addr.sin_port);
-            }
-        }
-        LOG(INFO) << "server:[" << _ip << ":" << _port << "] receives a connection request from client:[]"
+        // if (0 == getpeername(client_sockfd, (struct sockaddr*)&client_addr, &client_len))
+        // {
+        //     char ipv4_str[INET_ADDRSTRLEN] = {0};
+        //     if(NULL != inet_ntop(AF_INET, &(client_addr.sin_addr.s_addr), ipv4_str, INET_ADDRSTRLEN))
+        //     {
+        //         client_ip = std::string(ipv4_str);
+        //         client_port = ntohs(client_addr.sin_port);
+        //     }
+        // }
+        LOG(INFO) << "server:[" << _ip << ":" << _port << "] receives a connection request from client:["
                 <<  client_ip << ":" << client_port << "]" << std::endl;
         new_conn = std::make_shared<TcpConnection>(client_sockfd, client_ip, client_port, _ip, _port);
-
     }
     else
     {

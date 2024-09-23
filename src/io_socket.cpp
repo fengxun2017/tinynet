@@ -100,7 +100,6 @@ int IoSocket::accept_socket(std::string& client_ip, int& client_port)
                 client_ip = std::string(ipv4_str);
                 client_port = ntohs(client_addr.sin_port);
             }
-            
         }
     }
 

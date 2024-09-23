@@ -1,0 +1,3 @@
+use uniq_ptr
+use nocopyable
+不要使用delete

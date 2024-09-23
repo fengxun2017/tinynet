@@ -1,15 +1,21 @@
 #include <string>
-#include "tcp_conntion.h"
+#include "tcp_connection.h"
 #include "logging.h"
 
 namespace tinynet
 {
 
-
 TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int client_port,
-                const std::string& server_ip, int server_port);
-    : _sockfd(sockfd), _client_ip(client_ip), _client_port(client_port),
-      _server_ip(server_ip), _server_port(server_port)
+                const std::string& server_ip, int server_port,
+                EventLoop *event_loop, std::string &name);
+    : _name(name),
+      _sockfd(sockfd),
+      _client_ip(client_ip),
+      _client_port(client_port),
+      _server_ip(server_ip),
+      _server_port(server_port),
+      _channel(sockfd, event_loop->get_poller(), _name + "_channel")
+
 {
     _channel.set_reab_callback
     _channel.set_write_callback
@@ -18,7 +24,8 @@ TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int clien
 
 }
 
-TcpConnection::~TcpConnection(void) {
+TcpConnection::~TcpConnection() 
+{
     close(_sockfd);
 }
 
@@ -38,9 +45,17 @@ int TcpConnection::get_client_port(void)
     return _client_port;
 }
 
-void TcpConnection::handle_recvdata(uint8_t data, size_t len)
+void onmessage_handler(void)
+{
+
+}
+void disconnected_handler(void)
+{
+
+}
+void write_complete_handler(void)
 {
 
 }
 
-}
+} // tinynet

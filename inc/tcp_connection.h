@@ -15,9 +15,10 @@ using TcpConnPtr = std::shard_ptr<TcpConnection>
 class TcpConnection {
 public:
     TcpConnection(int sockfd, const std::string& client_ip, int client_port,
-                const std::string& server_ip, int server_port);
+                const std::string& server_ip, int server_port,
+                EventLoop *event_loop, std::string &name);
 
-    ~TcpConnection(void);
+    ~TcpConnection();
 
     void write_data(const void* buffer, size_t length);
     void set_disconnected_cb(std::function<void(TcpConnPtr &)> &disconected_cb) {_disconected_cb = disconected_cb;};
@@ -32,20 +33,22 @@ public:
     void close(void);
 
 private:
-    void handle_recvdata(uint8_t data, size_t len);
-
-    IoSocket _socket;
-    IoChannel _channel;
+    void onmessage_handler(void);
+    void disconnected_handler(void);
+    void write_complete_handler(void);
+    
+    std::string _name;
+    int _sockfd;
     std::string _client_ip;
     int _client_port;
     std::string _server_ip;
     int _server_port;
+    IoChannel _channel;
     std::function<void(TcpConnPtr &)> _write_complete_cb = nullptr;
     std::function<void(TcpConnPtr &)> _on_message_cb = nullptr;
     std::function<void(TcpConnPtr &)> _disconected_cb = nullptr;
 
 };
-
 }
 
 
