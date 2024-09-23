@@ -24,9 +24,9 @@ void IoChannel::update_poll_cfg(void)
             _state = IN_POLLER;
         }
         else
-        (
+        {
             _poller->update_channel(*this);
-        )
+        }
     }
     else
     {

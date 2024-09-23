@@ -1,5 +1,5 @@
-#ifndef _TINYNET_CONN_ACCEPTOR_H_
-#define _TINYNET_CONN_ACCEPTOR_H_
+#ifndef _TINYNET_TCP_ACCEPTOR_H_
+#define _TINYNET_TCP_ACCEPTOR_H_
 #include <iostream>
 #include <string>
 #include <netinet/in.h>
@@ -8,7 +8,6 @@
 
 namespace tinynet
 {
-
 
 class TcpAcceptor {
 public:
