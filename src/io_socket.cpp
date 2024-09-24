@@ -112,12 +112,17 @@ int IoSocket::accept_socket(std::string& client_ip, int& client_port)
 bool IoSocket::connect_socket(const std::string& remote_ip, int remote_port) {
     bool ret = true;
 
+    if (!check_fd(_sockfd))
+    {
+        return false;
+    }
+
     memset(&_addr, 0, sizeof(_addr));
     _addr.sin_family = AF_INET;
     _addr.sin_port = htons(remote_port);
 
-    int s = inet_pton(AF_INET, remote_ip.c_str(), &(_addr.sin_addr.s_addr));
-    if (1 == s)
+    int state = inet_pton(AF_INET, remote_ip.c_str(), &(_addr.sin_addr.s_addr));
+    if (1 == state)
     {
         if (_protocol == TCP)
         {
@@ -130,7 +135,7 @@ bool IoSocket::connect_socket(const std::string& remote_ip, int remote_port) {
     else
     {
         ret = false;
-        if (0 == s)
+        if (0 == state)
         {
             LOG(ERROR) << "IP:" << remote_ip << " is not a valid network address" << std::endl;
         }
@@ -140,7 +145,7 @@ bool IoSocket::connect_socket(const std::string& remote_ip, int remote_port) {
         }
     }
 
-    return true;
+    return ret;
 }
 
 ssize_t IoSocket::write_data(const void* buffer, size_t length) {

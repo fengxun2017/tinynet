@@ -12,10 +12,10 @@ namespace tinynet
 
 class TcpServer {
 public:
-    using NewConnCb = std::function<void(TcpConnection&)>;
-    using DisconnectedCb = std::function<void(TcpConnection&)>;
-    using OnMessageCb = std::function<void(TcpConnection&, const uint8_t *data, size_t size)>;
-    using WriteCompleteCb = std::function<void(TcpConnection&)>;
+    using NewConnCb = std::function<void(TcpConnPtr&)>;
+    using DisconnectedCb = std::function<void(TcpConnPtr&)>;
+    using OnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
+    using WriteCompleteCb = std::function<void(TcpConnPtr&)>;
 
     TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name);
     ~TcpServer(void);
