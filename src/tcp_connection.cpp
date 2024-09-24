@@ -34,7 +34,7 @@ TcpConnection::~TcpConnection()
     {
         close();
     }
-    LOG(DEBUG) << _name << " has been destructed." << std::endl;
+    LOG(DEBUG) << "connection: " <<_name << " has been destructed." << std::endl;
 }
 
 void TcpConnection::close() 
@@ -89,9 +89,9 @@ int TcpConnection::get_client_port(void)
 void TcpConnection::handle_onmessage(void)
 {
     ssize_t bytes_read = read(_sockfd, _data_buffer.data(), _data_buffer.size());
+    LOG(DEBUG) <<_name << " recv data. " << "len=" << bytes_read << std::endl;
     if (bytes_read > 0) 
     {
-        LOG(DEBUG) <<_name << " recv data. " << "len=" << bytes_read << std::endl;
         
         if (nullptr != _on_message_cb)
         {

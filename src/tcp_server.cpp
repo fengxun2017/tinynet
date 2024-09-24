@@ -80,7 +80,7 @@ void TcpServer::handle_new_connection(TcpConnPtr new_conn)
 
 void TcpServer::handle_disconnected(TcpConnPtr conn)
 {
-    LOG(INFO) << "the connection with " << conn->get_client_ip() << ":" << conn->get_client_port() << "is disconnected\n";
+    LOG(INFO) << "The connection between "<< _name << " and [" << conn->get_client_ip() << ":" << conn->get_client_port() << "] is disconnected" << std::endl;
     auto item = _connections.find(conn->get_fd());
     if (item != _connections.end())
     {
@@ -101,7 +101,7 @@ void TcpServer::handle_disconnected(TcpConnPtr conn)
 
 void TcpServer::handle_message(TcpConnPtr conn, const uint8_t *data, size_t size)
 {
-    LOG(INFO) <<_name << "receives data\n";
+    LOG(DEBUG) <<_name << " receives data\n";
 #ifdef TINYNET_DEBUG
     auto item = _connections.find(conn->get_fd());
     if (item == _connections.end())
