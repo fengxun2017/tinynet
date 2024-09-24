@@ -13,7 +13,7 @@ void IoChannel::update_poll_cfg(void)
 {
     if (nullptr == _poller)
     {
-        LOG(ERROR) << "poller is null, in IoChannel::update_poll_cfg" << std::endl;
+        LOG(ERROR) << _name << ":poller is null, in IoChannel::update_poll_cfg" << std::endl;
         return ;
     }
 
@@ -46,33 +46,34 @@ IoChannel::~IoChannel(){}
 
 void IoChannel::disable_all(void)
 {
+    LOG(INFO) << _name << ":disable_all" << std::endl;
     _events_interested = 0;
     update_poll_cfg();
 }
 
 void IoChannel::enable_read(void)
 {
-    LOG(INFO) << "enable read" << std::endl;
+    LOG(INFO) << _name << ":enable read" << std::endl;
     _events_interested |= (EPOLLIN | EPOLLPRI);
     update_poll_cfg();
 }
 
 void IoChannel::disable_read(void)
 {
-    LOG(INFO) << "disable read" << std::endl;
+    LOG(INFO) << _name << ":disable read" << std::endl;
     _events_interested &= ~(EPOLLIN | EPOLLPRI);
     update_poll_cfg();
 }
 
 void IoChannel::enable_write(void)
 {
-    LOG(INFO) << "enable write" << std::endl;
+    LOG(INFO) << _name << ":enable write" << std::endl;
     _events_interested |= EPOLLOUT;
     update_poll_cfg();
 }
 void IoChannel::disable_write(void)
 {
-    LOG(INFO) << "disable write" << std::endl;
+    LOG(INFO) << _name << ":disable write" << std::endl;
     _events_interested &= ~EPOLLOUT;
     update_poll_cfg();
 }
@@ -92,7 +93,7 @@ static std::string event_to_string(uint32_t event_mask)
 void IoChannel::handle_event(void)
 {
 
-    LOG(DEBUG) << "fd:" << _fd << " event:" << event_to_string(_events_received);
+    LOG(DEBUG) << _name << ": recv event:" << event_to_string(_events_received) << std::endl;
     if ((_events_received & (EPOLLIN | EPOLLPRI)) && _read_cb)
     {
         _read_cb();

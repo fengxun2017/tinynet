@@ -8,10 +8,10 @@ namespace tinynet
 
 TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name)
     : _name(name),
-      _acceptor(ip, port, _name+"_acceptor")
+      _acceptor(event_loop, ip, port, _name+"_acceptor")
 {
-    _event_loop = event_loop
-    _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this));
+    _event_loop = event_loop;
+    _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this, std::placeholders::_1));
     LOG(DEBUG) << "Service:" << ip << port <<" is created" << std::endl;
 }
 
@@ -27,15 +27,15 @@ bool TcpServer::start(void)
 
 void TcpServer::stop(void)
 {
-    _acceptor.stop();
-    for (auto& conn : _connections)
+    _acceptor.close();
+    for (auto& item : _connections)
     {
-        conn->close();
+        (item.second)->close();
     }
     _connections.clear();
 }
 
-void TcpServer::handle_new_connection(TcpConnPtr& new_conn)
+void TcpServer::handle_new_connection(TcpConnPtr new_conn)
 {
     if(nullptr != new_conn)
     {
@@ -53,9 +53,12 @@ void TcpServer::handle_new_connection(TcpConnPtr& new_conn)
                 << std::endl;
             _connections.emplace(std::make_pair(new_conn->get_fd(), new_conn));
 
-            new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this));
-            new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this));
-            new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this));
+            new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this, std::placeholders::_1));
+            new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this,
+                                        std::placeholders::_1,
+                                        std::placeholders::_2,
+                                        std::placeholders::_3));
+            new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this, std::placeholders::_1));
 
             if (_newconn_cb) 
             {
@@ -70,7 +73,7 @@ void TcpServer::handle_new_connection(TcpConnPtr& new_conn)
 }
 
 
-void TcpServer::handle_disconnected(TcpConnPtr& conn)
+void TcpServer::handle_disconnected(TcpConnPtr conn)
 {
     LOG(INFO) << "the connection with " << conn->get_client_ip() << ":" << conn->get_client_port() << "is disconnected\n";
     auto item = _connections.find(conn->get_fd());
@@ -82,7 +85,7 @@ void TcpServer::handle_disconnected(TcpConnPtr& conn)
         }
 
         // The release should be at the end
-        (void)_connections.erase(item)
+        (void)_connections.erase(item);
     }
     else
     {
@@ -91,7 +94,7 @@ void TcpServer::handle_disconnected(TcpConnPtr& conn)
     }
 }
 
-void TcpServer::handle_message(TcpConnPtr& conn, const char *data, size_t len)
+void TcpServer::handle_message(TcpConnPtr conn, const uint8_t *data, size_t size)
 {
     LOG(INFO) << conn->get_client_ip() << ":" << conn->get_client_port() << "receives data\n";
 #ifdef TINYNET_DEBUG
@@ -112,7 +115,7 @@ void TcpServer::handle_message(TcpConnPtr& conn, const char *data, size_t len)
     }
 }
 
-void TcpServer::handle_write_complete(TcpConnPtr& conn)
+void TcpServer::handle_write_complete(TcpConnPtr conn)
 {
     LOG(INFO) << "the write operation to connect " << conn->get_client_ip() << ":" << conn->get_client_port() << "is complete\n";
 #ifdef TINYNET_DEBUG

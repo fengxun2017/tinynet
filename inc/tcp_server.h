@@ -12,7 +12,7 @@ namespace tinynet
 
 class TcpServer {
 public:
-    using NewConnCb = std::function<void(const TcpConnection&)>;
+    using NewConnCb = std::function<void( TcpConnection const &)>;
     using DisconnectedCb = std::function<void(const TcpConnection&)>;
     using OnMessageCb = std::function<void(const TcpConnection&)>;
     using WriteCompleteCb = std::function<void(const TcpConnection&)>;
@@ -40,13 +40,13 @@ public:
     void stop(void);
 
 private:
-    void handle_new_connection(TcpConnPtr& conn);
+    void handle_new_connection(TcpConnPtr conn);
 
-    void handle_disconnected(TcpConnPtr& conn);
+    void handle_disconnected(TcpConnPtr conn);
 
-    void handle_message(TcpConnPtr& conn, const char *data, size_t len);
+    void handle_message(TcpConnPtr conn, const uint8_t *data, size_t size);
 
-    void handle_write_complete(TcpConnPtr& conn);
+    void handle_write_complete(TcpConnPtr conn);
     std::string _name;
     TcpAcceptor _acceptor;
     std::unordered_map<int, TcpConnPtr> _connections;

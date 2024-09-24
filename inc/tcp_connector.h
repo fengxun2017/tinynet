@@ -4,14 +4,21 @@
 #include <string>
 #include "io_socket.h"
 #include "io_channel.h"
+#include "event_loop.h"
 
 namespace tinynet
 {
 
 class TcpConnector {
 public:
-    TcpConnector(const std::string& server_ip, int server_port)
-        : _connector_socket(IoSocket::TCP), _remote_ip(server_ip), _remote_port(server_port) {}
+    TcpConnector(EventLoop *event_loop, std::string &name, std::string& server_ip, int server_port)
+        : _name(name),_connector_socket(IoSocket::TCP),
+          _remote_ip(server_ip), _remote_port(server_port),
+          _event_loop(event_loop), 
+          _channel(_connector_socket.get_fd(), _event_loop->get_poller(), _name)
+    {
+        
+    }
 
     ~TcpConnector() {}
 
@@ -28,10 +35,12 @@ public:
     }
 
 private:
-    IoChannel _channel;
+    std::string _name;
     IoSocket _connector_socket;
     std::string _remote_ip;
     int _remote_port;
+    EventLoop *_event_loop;
+    IoChannel _channel;
 };
 
 }

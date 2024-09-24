@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <string.h> // strerror_s
 #include "tinynet_util.h"
 #include "logging.h"
 
@@ -9,13 +10,8 @@ thread_local char error_str[512];
 
 const char * error_to_str (int errnum)
 {
-    if(strerror_s(errnum, error_str, sizeof(error_str)) !=0)
-    {
-        LOG(ERROR) << "error_to_str failed" << std::endl;
-        return "None";
-    }
+    return strerror_r(errnum, error_str, sizeof(error_str));
 
-    return error_str;
 }
 
 void check_fd_nonblock(int fd)

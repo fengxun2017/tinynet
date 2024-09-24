@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <sstream>
 #include <functional>
+#include <unistd.h>
 #include "tinynet_util.h"
 #include "tcp_acceptor.h"
 #include "tcp_connection.h"
@@ -43,6 +44,11 @@ bool TcpAcceptor::start()
 
     LOG(INFO) << "server: " << _ip << ":" << _port << " start!" << std::endl;
     return true;
+}
+
+void TcpAcceptor::close() 
+{
+    _channel.disable_read();
 }
 
 void TcpAcceptor::accept_connection(void)

@@ -4,7 +4,7 @@
 #include "tcp_connection.h"
 #include "logging.h"
 #include "event_loop.h"
-
+#include "tinynet_util.h"
 namespace tinynet
 {
 
@@ -18,7 +18,8 @@ TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int clien
       _server_ip(server_ip),
       _server_port(server_port),
       _channel(sockfd, event_loop->get_poller(), _name + "_channel"),
-      _data_buffer(4096)
+      _data_buffer(4096),
+      _state(TCP_CONNECTED)
 {
     _channel.set_reab_callback(std::bind(&TcpConnection::handle_onmessage, this));
     _channel.set_write_callback(std::bind(&TcpConnection::handle_write_complete, this));
@@ -27,7 +28,20 @@ TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int clien
 
 TcpConnection::~TcpConnection() 
 {
-    close(_sockfd);
+    if (check_fd(_sockfd))
+    {
+        close();
+    }
+}
+
+void TcpConnection::close() 
+{
+    if (check_fd(_sockfd))
+    {
+        ::close(_sockfd);
+        _sockfd = -1;
+    }
+
 }
 
 void TcpConnection::write_data(const void* buffer, size_t length)
@@ -37,6 +51,7 @@ void TcpConnection::write_data(const void* buffer, size_t length)
 
     if (check_fd(_sockfd))
     {
+        /* TODO: Implement asynchronous write using cache.*/
         while (left_size)
         {
             bytes_write = write(_sockfd, buffer, left_size);
@@ -47,7 +62,7 @@ void TcpConnection::write_data(const void* buffer, size_t length)
             if (0 > bytes_write)
             {
                 error_to_str(errno);
-                breakl
+                break;
             }
             else
             {
@@ -70,7 +85,7 @@ int TcpConnection::get_client_port(void)
 
 void TcpConnection::handle_onmessage(void)
 {
-    ssize_t bytes_read = read(_sockfd, _data_buffer, sizeof(_data_buffer));
+    ssize_t bytes_read = read(_sockfd, _data_buffer.data(), _data_buffer.size());
     if (bytes_read > 0) 
     {
         LOG(DEBUG) << "recv data from " << get_client_ip() 
@@ -78,7 +93,7 @@ void TcpConnection::handle_onmessage(void)
         
         if (nullptr != _on_message_cb)
         {
-            _on_message_cb(shared_from_this(), _data_buffer, bytes_read);
+            _on_message_cb(shared_from_this(), _data_buffer.data(), (size_t)bytes_read);
         }
     }
     else if (bytes_read == 0)

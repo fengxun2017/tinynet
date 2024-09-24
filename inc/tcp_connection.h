@@ -11,6 +11,12 @@
 namespace tinynet
 {
 
+typedef enum
+{
+    TCP_CONNECTED = 1,
+    TCP_DISCONNECTED,
+}TcpConnState;
+
 class TcpConnection;
 using TcpConnPtr = std::shared_ptr<TcpConnection>;
 
@@ -24,9 +30,9 @@ public:
     ~TcpConnection();
 
     void write_data(const void* buffer, size_t length);
-    void set_disconnected_cb(std::function<void(TcpConnPtr &)> &disconected_cb) {_disconected_cb = disconected_cb;};
-    void set_onmessage_cb(std::function<void(TcpConnPtr &)> &on_message_cb) {_on_message_cb = on_message_cb;};
-    void set_write_complete_cb(std::function<void(TcpConnPtr &)> & write_complete_cb) { _write_complete_cb = write_complete_cb;}
+    void set_disconnected_cb(std::function<void(TcpConnPtr)> disconected_cb) {_disconected_cb = disconected_cb;}
+    void set_onmessage_cb(std::function<void(TcpConnPtr, const uint8_t *, size_t )> on_message_cb) {_on_message_cb = on_message_cb;}
+    void set_write_complete_cb(std::function<void(TcpConnPtr)> write_complete_cb) { _write_complete_cb = write_complete_cb;}
     int get_fd(void) {return _channel.get_fd();}
 
     std::string get_client_ip(void);
@@ -47,11 +53,13 @@ private:
     std::string _server_ip;
     int _server_port;
     IoChannel _channel;
-    std::vector<char> _data_buffer;
-    std::function<void(TcpConnPtr &)> _write_complete_cb = nullptr;
-    std::function<void(TcpConnPtr &)> _on_message_cb = nullptr;
-    std::function<void(TcpConnPtr &)> _disconected_cb = nullptr;
+    std::vector<uint8_t> _data_buffer;
+    TcpConnState _state;
+    std::function<void(TcpConnPtr)> _write_complete_cb = nullptr;
+    std::function<void(TcpConnPtr, const uint8_t *, size_t)> _on_message_cb = nullptr;
+    std::function<void(TcpConnPtr)> _disconected_cb = nullptr;
 };
+
 }
 
 
