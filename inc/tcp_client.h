@@ -1,5 +1,5 @@
-#ifndef _TINYNET_TCP_CONNECTOR_H_
-#define _TINYNET_TCP_CONNECTOR_H_
+#ifndef _TINYNET_TCP_CLIENT_H_
+#define _TINYNET_TCP_CLIENT_H_
 
 #include <string>
 #include "event_loop.h"
@@ -16,11 +16,11 @@ public:
     using TcpClientOnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
     using TcpClientWriteCompleteCb = std::function<void(TcpConnPtr&)>;
 
-    TcpClient(EventLoop *event_loop, std::string &client_name);
+    TcpClient(EventLoop *event_loop, std::string client_name);
 
     ~TcpClient();
 
-    bool connect(std::string& server_ip, int server_port);
+    bool connect(std::string server_ip, int server_port);
 
     void set_newconn_cb(TcpClientNewConnCb newconn_cb) {
         _newconn_cb = newconn_cb;
@@ -62,4 +62,4 @@ private:
 }
 
 
-#endif // _TINYNET_TCP_CONNECTOR_H_
+#endif // _TINYNET_TCP_CLIENT_H_

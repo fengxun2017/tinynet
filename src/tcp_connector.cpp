@@ -9,7 +9,7 @@ namespace tinynet
 {
 
 
-TcpConnector::TcpConnector(EventLoop *event_loop, std::string &name)
+TcpConnector::TcpConnector(EventLoop *event_loop, std::string name)
     : _name(name),
     _connector_socket(_name + ":socket", IoSocket::TCP),
     _event_loop(event_loop)

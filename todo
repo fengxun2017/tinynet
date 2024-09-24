@@ -1,3 +1,4 @@
 use uniq_ptr
 use nocopyable
 不要使用delete
+使用const修饰string引用。

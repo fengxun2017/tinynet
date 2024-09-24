@@ -25,7 +25,7 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection>
 public:
     TcpConnection(int sockfd, const std::string& client_ip, int client_port,
                 const std::string& server_ip, int server_port,
-                EventLoop *event_loop, std::string &name);
+                EventLoop *event_loop, std::string name);
 
     ~TcpConnection();
 

@@ -67,7 +67,7 @@ void TcpServer::handle_new_connection(TcpConnPtr new_conn)
 
             if (_newconn_cb) 
             {
-                _newconn_cb(*new_conn);
+                _newconn_cb(new_conn);
             }
         }
     }
@@ -86,7 +86,7 @@ void TcpServer::handle_disconnected(TcpConnPtr conn)
     {
 
         if (_disconnected_cb) {
-            _disconnected_cb(*conn);
+            _disconnected_cb(conn);
         }
 
         // The release should be at the end
@@ -115,7 +115,7 @@ void TcpServer::handle_message(TcpConnPtr conn, const uint8_t *data, size_t size
     {
         if (_on_message_cb)
         {
-            _on_message_cb(*conn, data, size);
+            _on_message_cb(conn, data, size);
         }
     }
 }
@@ -136,7 +136,7 @@ void TcpServer::handle_write_complete(TcpConnPtr conn)
     {
         if (_write_complete_cb)
         {
-            _write_complete_cb(*conn);
+            _write_complete_cb(conn);
         }
     }
 }
