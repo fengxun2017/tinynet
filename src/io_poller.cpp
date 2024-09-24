@@ -45,7 +45,7 @@ void IoPoller::poll(int timeout_ms, Channels &active_channels)
             IoChannel *channel = static_cast<IoChannel *>(_event_wait[index].data.ptr);
             if (nullptr != channel)
             {
-                LOG(DEBUG) << "channel:" << channel->get_name() << " received the event" << std::endl;
+                LOG(DEBUG) << channel->get_name() << " received the event" << std::endl;
                 channel->set_events_received(_event_wait[index].events);
                 active_channels.push_back(channel);
             }

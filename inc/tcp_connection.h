@@ -40,7 +40,8 @@ public:
     int get_client_port(void);
 
     void close(void);
-
+    std::string get_name(void) {return _name;}
+    
 private:
     void handle_onmessage(void);
     void handle_disconnected(void);

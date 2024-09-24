@@ -4,7 +4,7 @@
 namespace tinynet
 {
 
-EventLoop::EventLoop(void)
+EventLoop::EventLoop(void) : _quit(false)
 {
     _poller = std::make_shared<IoPoller>();
 }

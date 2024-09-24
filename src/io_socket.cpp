@@ -29,11 +29,11 @@ IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
 
 IoSocket::~IoSocket()
 {
-    LOG(DEBUG) << "IoSocket:" << _name << " destructor." << std::endl;
     if (check_fd(_sockfd)) 
     {
         close(_sockfd);
     }
+    LOG(DEBUG) << _name << " has been destructed.." << std::endl;
 }
 
 bool IoSocket::bind_socket(const std::string& self_ip, int self_port)

@@ -25,7 +25,7 @@ TcpAcceptor::TcpAcceptor(EventLoop *event_loop, const std::string& ip, int port,
 
 TcpAcceptor::~TcpAcceptor()
 {
-    LOG(DEBUG) << "TcpAcceptor:" << _name << "destructor." << std::endl;
+    LOG(DEBUG) << _name << " has been destructed." << std::endl;
 }
 
 bool TcpAcceptor::start() 
@@ -51,6 +51,7 @@ bool TcpAcceptor::start()
 
 void TcpAcceptor::close() 
 {
+    LOG(INFO) << "close " << _name << std::endl;
     _channel.disable_read();
 }
 

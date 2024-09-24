@@ -17,22 +17,23 @@ TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int clien
       _client_port(client_port),
       _server_ip(server_ip),
       _server_port(server_port),
-      _channel(sockfd, event_loop->get_poller(), _name + "_channel"),
+      _channel(sockfd, event_loop->get_poller(), _name + ":channel"),
       _data_buffer(4096),
       _state(TCP_CONNECTED)
 {
     _channel.set_reab_callback(std::bind(&TcpConnection::handle_onmessage, this));
     _channel.set_write_callback(std::bind(&TcpConnection::handle_write_complete, this));
     _channel.set_close_callback(std::bind(&TcpConnection::handle_disconnected, this));
+    LOG(DEBUG) << "TcpConnection created: " << _channel.get_name();
 }
 
 TcpConnection::~TcpConnection() 
 {
-    LOG(DEBUG) << "TcpConnection:" << _name << " destructor." << std::endl;
     if (check_fd(_sockfd))
     {
         close();
     }
+    LOG(DEBUG) << _name << " has been destructed." << std::endl;
 }
 
 void TcpConnection::close() 

@@ -45,7 +45,7 @@ IoChannel::IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name
 
 IoChannel::~IoChannel()
 {
-    LOG(DEBUG) << "IoChannel:" << _name << " destructor." << std::endl;
+    LOG(DEBUG) << _name << " has been destructed." << std::endl;
 }
 
 void IoChannel::disable_all(void)
@@ -97,7 +97,7 @@ static std::string event_to_string(uint32_t event_mask)
 void IoChannel::handle_event(void)
 {
 
-    LOG(DEBUG) << _name << ": recv event:" << event_to_string(_events_received) << std::endl;
+    LOG(DEBUG) << _name << ": recv event: " << event_to_string(_events_received) << std::endl;
     if ((_events_received & (EPOLLIN | EPOLLPRI)) && _read_cb)
     {
         _read_cb();

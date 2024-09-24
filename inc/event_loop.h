@@ -23,7 +23,7 @@ public:
     
 
 private:
-    bool _quit = false;
+    bool _quit;
     std::shared_ptr<IoPoller> _poller;
 };
 

@@ -17,8 +17,8 @@ TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std
 
 TcpServer::~TcpServer(void)
 {
-    LOG(DEBUG) << "TcpServer:" << _name << " destructor." << std::endl;
     stop();
+    LOG(DEBUG) << _name << " has been destructed." << std::endl;
 }
 
 bool TcpServer::start(void)
@@ -28,10 +28,13 @@ bool TcpServer::start(void)
 
 void TcpServer::stop(void)
 {
-    LOG(DEBUG) << "TcpServer:" << _name << " disconnects all connections." << std::endl;
+    // Stop accepting new connections
+    LOG(INFO) << "Stop " << _name << std::endl;
     _acceptor.close();
+
     for (auto& item : _connections)
     {
+        LOG(INFO) << "TcpServer:" << _name << " disconnect from " << (item.second)->get_name() << std::endl;
         (item.second)->close();
     }
     _connections.clear();
@@ -50,9 +53,9 @@ void TcpServer::handle_new_connection(TcpConnPtr new_conn)
         else
 #endif
         {
-            LOG(INFO) << "The connection from " << new_conn->get_client_ip() 
-                << ":" << new_conn->get_client_port() << " is established" 
-                << std::endl;
+            // LOG(INFO) << "The connection from " << new_conn->get_client_ip() 
+            //     << ":" << new_conn->get_client_port() << " is established" 
+            //     << std::endl;
             _connections.emplace(std::make_pair(new_conn->get_fd(), new_conn));
 
             new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this, std::placeholders::_1));
