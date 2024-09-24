@@ -44,7 +44,7 @@ private:
 
     void handle_disconnected(TcpConnPtr& conn);
 
-    void handle_message(TcpConnPtr& conn);
+    void handle_message(TcpConnPtr& conn, const char *data, size_t len);
 
     void handle_write_complete(TcpConnPtr& conn);
     std::string _name;

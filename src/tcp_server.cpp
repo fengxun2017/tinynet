@@ -39,7 +39,7 @@ void TcpServer::handle_new_connection(TcpConnPtr& new_conn)
 {
     if(nullptr != new_conn)
     {
-#ifdef TINYNET_BUDEG
+#ifdef TINYNET_DEBUG
         auto item = _connections.find(new_conn->get_fd());
         if (item != _connections.end())
         {
@@ -76,11 +76,13 @@ void TcpServer::handle_disconnected(TcpConnPtr& conn)
     auto item = _connections.find(conn->get_fd());
     if (item != _connections.end())
     {
-        (void)_connections.erase(item);
 
         if (_disconnected_cb) {
             _disconnected_cb(*conn);
         }
+
+        // The release should be at the end
+        (void)_connections.erase(item)
     }
     else
     {
@@ -89,10 +91,10 @@ void TcpServer::handle_disconnected(TcpConnPtr& conn)
     }
 }
 
-void TcpServer::handle_message(TcpConnPtr& conn)
+void TcpServer::handle_message(TcpConnPtr& conn, const char *data, size_t len)
 {
     LOG(INFO) << conn->get_client_ip() << ":" << conn->get_client_port() << "receives data\n";
-#ifdef TINYNET_BUDEG
+#ifdef TINYNET_DEBUG
     auto item = _connections.find(conn->get_fd());
     if (item == _connections.end())
     {
@@ -113,7 +115,7 @@ void TcpServer::handle_message(TcpConnPtr& conn)
 void TcpServer::handle_write_complete(TcpConnPtr& conn)
 {
     LOG(INFO) << "the write operation to connect " << conn->get_client_ip() << ":" << conn->get_client_port() << "is complete\n";
-#ifdef TINYNET_BUDEG
+#ifdef TINYNET_DEBUG
     auto item = _connections.find(conn->get_fd());
     if (item == _connections.end())
     {

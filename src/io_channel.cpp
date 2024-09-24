@@ -103,4 +103,5 @@ void IoChannel::handle_event(void)
         _write_cb();
     }
 }
+
 }  // namespace tinynet
