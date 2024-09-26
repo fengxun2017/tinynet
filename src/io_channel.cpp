@@ -8,6 +8,33 @@
 
 namespace tinynet
 {
+
+void IoChannel::update_poll_cfg(void)
+{
+    if (nullptr == _poller)
+    {
+        return ;
+    }
+
+    if (0 != _events_interested)
+    {
+        if (NOTIN_POLER == _state)
+        {
+            _poller->add_channel(*this);
+            _state = IN_POLLER;
+        }
+        else
+        (
+            _poller->update_channel(*this);
+        )
+    }
+    else
+    {
+        _poller->remove_channel(*this);
+        _state = NOTIN_POLER;
+    }
+}
+
 IoChannel::IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name)
     : _fd(fd), _poller(poller), _name(name)
 {
@@ -16,23 +43,33 @@ IoChannel::IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name
 
 IoChannel::~IoChannel(){};
 
+void IoChannel::disable_all(void)
+{
+    _events_interested = 0;
+    update_poll_cfg();
+}
+
 void IoChannel::enable_read(void)
 {
     _events_interested |= (EPOLLIN | EPOLLPRI);
+    update_poll_cfg();
 }
 
 void IoChannel::disable_read(void)
 {
     _events_interested &= ~(EPOLLIN | EPOLLPRI);
+    update_poll_cfg();
 }
 
 void IoChannel::enable_write(void)
 {
     _events_interested |= EPOLLOUT;
+    update_poll_cfg();
 }
 void IoChannel::disable_write(void)
 {
     _events_interested &= ~EPOLLOUT;
+    update_poll_cfg();
 }
 
 static std::string event_to_string(uint32_t event_mask)

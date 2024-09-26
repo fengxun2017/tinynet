@@ -28,14 +28,16 @@ public:
     void enable_write(void);
     void disable_read(void);
     void disable_write(void);
-
+    void disable_all(void);
     int get_fd(void) {return _fd;}
     void set_events_received(int events) {_events_received = events;}
 
 private:
+    void update_poll_cfg(void);
+
     const int  _fd;
-    uint32_t        _events_interested;
-    uint32_t        _events_received;
+    uint32_t        _events_interested = 0;
+    uint32_t        _events_received = 0;
     std::string     _name;
     ChannelState   _state;
     
