@@ -3,6 +3,7 @@
 
 #include <string>
 #include "io_socket.h"
+#include "io_channel.h"
 
 namespace tinynet
 {
@@ -27,6 +28,7 @@ public:
     }
 
 private:
+    IoChannel _channel;
     IoSocket _connector_socket;
     std::string _remote_ip;
     int _remote_port;

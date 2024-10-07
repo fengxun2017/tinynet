@@ -11,6 +11,11 @@ TcpConnection(int sockfd, const std::string& client_ip, int client_port,
     : _sockfd(sockfd), _client_ip(client_ip), _client_port(client_port),
       _server_ip(server_ip), _server_port(server_port)
 {
+    
+    _channel.set_reab_callback
+    _channel.set_write_callback
+    _channel.set_close_callback
+    _channel.set_error_callback
 
 }
 
@@ -22,7 +27,6 @@ void TcpConnection::write_data(const void* buffer, size_t length)
 {
 
 }
-
 
 
 std::string TcpConnection::get_client_ip(void) 

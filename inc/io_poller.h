@@ -1,5 +1,5 @@
-#ifndef _TINYNET_POLLER_H_
-#define _TINYNET_POLLER_H_
+#ifndef _TINYNET_IO_POLLER_H_
+#define _TINYNET_IO_POLLER_H_
 
 #include <vector>
 #include <unordered_map>
@@ -27,8 +27,8 @@ private:
 
     int _poll_fd;
      std::unordered_map<int, IoChannel *> channel_map;
-    std::vector<struct epoll_event> _event_wait(10);
+    std::vector<struct epoll_event> _event_wait;
 };
 
 }  // namespace tinynet
-#endif  // _TINYNET_POLLER_H_
+#endif  // _TINYNET_IO_POLLER_H_

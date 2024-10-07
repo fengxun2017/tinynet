@@ -51,23 +51,27 @@ void IoChannel::disable_all(void)
 
 void IoChannel::enable_read(void)
 {
+    LOG(INFO) << "enable read" << std::endl;
     _events_interested |= (EPOLLIN | EPOLLPRI);
     update_poll_cfg();
 }
 
 void IoChannel::disable_read(void)
 {
+    LOG(INFO) << "disable read" << std::endl;
     _events_interested &= ~(EPOLLIN | EPOLLPRI);
     update_poll_cfg();
 }
 
 void IoChannel::enable_write(void)
 {
+    LOG(INFO) << "enable write" << std::endl;
     _events_interested |= EPOLLOUT;
     update_poll_cfg();
 }
 void IoChannel::disable_write(void)
 {
+    LOG(INFO) << "disable write" << std::endl;
     _events_interested &= ~EPOLLOUT;
     update_poll_cfg();
 }

@@ -1,7 +1,7 @@
 #include <cstddef>
 #include <vector>
 #include <sys/epoll.h>
-#include "channel.h"
+#include "io_poller.h"
 #include "io_channel.h"
 #include "logging.h"
 #include "tiny_util.h"
@@ -14,7 +14,7 @@ static const char * error_to_str (int errnum)
     return strerror_r(errnum, error_str, sizeof(error_str));
 }
 
-IoPoller::IoPoller(void)
+IoPoller::IoPoller(void) :_event_wait(10)
 {
     _poll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (!check_fd(_poll_fd))
@@ -106,7 +106,7 @@ int IoPoller::cfg_channel(int op, IoChannel &channel)
 void IoPoller::add_channel(IoChannel &channel)
 {
     int ret;
-
+    LOG(INFO) << channel.get_name() << ":EPOLL_CTL_ADD" << std::endl;
     ret = cfg_channel(EPOLL_CTL_ADD, channel);
     if (0 != ret)
     {
@@ -117,7 +117,7 @@ void IoPoller::add_channel(IoChannel &channel)
 void IoPoller::remove_channel(IoChannel &channel)
 {
     int ret;
-
+    LOG(INFO) << channel.get_name() << ":EPOLL_CTL_DEL" << std::endl;
     ret = cfg_channel(EPOLL_CTL_DEL, channel);
     if (0 != ret)
     {
@@ -128,7 +128,7 @@ void IoPoller::remove_channel(IoChannel &channel)
 void IoPoller::update_channel(IoChannel &channel)
 {
     int ret;
-
+    LOG(INFO) << channel.get_name() << ":EPOLL_CTL_MOD" << std::endl;
     ret = cfg_channel(EPOLL_CTL_MOD, channel);
     if (0 != ret)
     {
