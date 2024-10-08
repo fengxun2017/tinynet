@@ -2,6 +2,7 @@
 #define _TINYNET_TCP_SERVER_H_
 #include <string>
 #include <functional>
+#include <unordered_map>
 #include "tcp_connection.h"
 #include "tcp_acceptor.h"
 
@@ -38,16 +39,17 @@ public:
     void stop(void);
 
 private:
-    void handle_new_connection(TcpConnectionPtr& conn);
+    void handle_new_connection(std::shared_ptr<TcpConnection>& conn);
 
     void handle_disconnected(const TcpConnection& conn);
 
     void handle_message(const TcpConnection& conn);
 
     void handle_write_complete(const TcpConnection& conn);
+    bool conn_check_and_remove(TcpConnection& conn);
 
     TcpAcceptor _acceptor;
-    std::vector<std::shared_ptr<TcpConnection>> _connections;
+    std::unordered_map<int, std::shared_ptr<TcpConnection>> _connections;
     NewConnCb _newconn_cb = nullptr;
     DisconnectedCb _disconnected_cb = nullptr;
     OnMessageCb _on_message_cb = nullptr;

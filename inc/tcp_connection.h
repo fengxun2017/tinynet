@@ -20,6 +20,8 @@ public:
     void set_disconnected_cb(std::function<void(TcpConnection &conn)> &disconected_cb) {_disconected_cb = disconected_cb;};
     void set_onmessage_cb(std::function<void(TcpConnection &conn)> &on_message_cb) {_on_message_cb = on_message_cb;};
     void set_write_complete_cb(std::function<void(TcpConnection &conn)> & write_complete_cb) { _write_complete_cb = write_complete_cb;}
+    int get_fd(void) {return _channel.get_fd();}
+
     std::string get_client_ip(void);
 
     int get_client_port(void);
@@ -40,8 +42,6 @@ private:
     std::function<void(TcpConnection &conn)> _disconected_cb = nullptr;
 
 };
-
-using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 
 }
 

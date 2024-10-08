@@ -1,12 +1,20 @@
 #include <string>
+#include <utility>
+#include "logging.h"
 #include "tcp_server.h"
 #include "tcp_connection.h"
 
 namespace tinynet
 {
 
+typedef enum 
+{
+    EVENT_ON_MESSAGE = 0x01,
+    EVENT_WRITE_COMPLETE,
+    EVENT_DISCONNECTED
+}EventType;
 TcpServer::TcpServer(const std::string& ip, int port)
-    : _acceptor(ip, port) 
+    : _acceptor(ip, port)
 {
     _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this));
 }
@@ -31,23 +39,35 @@ void TcpServer::stop(void)
     _connections.clear();
 }
 
-void TcpServer::handle_new_connection(TcpConnectionPtr& new_conn)
+void TcpServer::handle_new_connection(std::shared_ptr<TcpConnection>& new_conn)
 {
     if(nullptr != new_conn)
     {
-        _connections.push_back(new_conn);
-        if (_disconnected_cb) {
-            new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this));
+        auto item = _connections.find(conn.get_fd());
+        if (item != _connections.end())
+        {
+            LOG(ERROR) << "The same file descriptor already exists" << std::endl; 
         }
-        if (_on_message_cb) {
-            new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this));
-        }
-        if (_write_complete_cb) {
-            new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this));
-        }
+        else
+        {
+            LOG(INFO) << "The connection from " << new_conn->get_client_ip() << ":" << new_conn->get_client_port() << " is established" << std::endl;
+            _connections.emplace(std::make_pair(new_conn.get_fd(), new_conn));
+            if (_disconnected_cb)
+            {
+                new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this));
+            }
+            if (_on_message_cb)
+            {
+                new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this));
+            }
+            if (_write_complete_cb)
+            {
+                new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this));
+            }
 
-        if (_newconn_cb) {
-            _newconn_cb(*new_conn);
+            if (_newconn_cb) {
+                _newconn_cb(*new_conn);
+            }
         }
     }
     else
@@ -56,30 +76,58 @@ void TcpServer::handle_new_connection(TcpConnectionPtr& new_conn)
     }
 }
 
-void handle_disconnected(TcpConnection& conn)
+
+void TcpServer::handle_disconnected(TcpConnection& conn)
 {
-    auto it = std::find_if(_connections.begin(), _connections.end(),
-                            &conn { return c.get() == &conn; });
-    if (it != _connections.end())
+    LOG(INFO) << "the connection with " << conn.get_client_ip() << ":" << conn.get_client_port() << "is disconnected\n";
+
+    auto item = _connections.find(conn.get_fd());
+    if (item != _connections.end())
     {
-        _connections.erase(it);
+        (void)_connections.erase(item);
+
+        if (_disconnected_cb) {
+            _disconnected_cb(conn);
+        }
     }
-    if (_disconnected_cb) {
-        _disconnected_cb(conn);
+    else
+    {
+        LOG(ERROR) << "error in TcpServer::handle_disconnected, "
+                << "the connection was not found from the connection collection " << std::endl;
     }
 }
 
-void handle_message(TcpConnection& conn)
+void TcpServer::handle_message(TcpConnection& conn)
 {
-    if (_on_message_cb) {
-        _on_message_cb(conn);
+    LOG(INFO) << conn.get_client_ip() << ":" << conn.get_client_port() << "receives data\n";
+    auto item = _connections.find(conn.get_fd());
+    if (item != _connections.end())
+    {
+        if (_on_message_cb) {
+            _on_message_cb(conn);
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "error in TcpServer::handle_message, "
+                << "the connection was not found from the connection collection " << std::endl;
     }
 }
 
-void handle_write_complete(TcpConnection& conn)
+void TcpServer::handle_write_complete(TcpConnection& conn)
 {
-    if (_write_complete_cb) {
-        _write_complete_cb(conn);
+    LOG(INFO) << "the write operation to connect " << conn.get_client_ip() << ":" << conn.get_client_port() << "is complete\n";
+    auto item = _connections.find(conn.get_fd());
+    if (item != _connections.end())
+    {
+        if (_write_complete_cb) {
+            _write_complete_cb(conn);
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "error in TcpServer::handle_write_complete, "
+                << "the connection was not found from the connection collection " << std::endl;
     }
 }
 

@@ -37,7 +37,7 @@ bool TcpAcceptor::start()
 
 void TcpAcceptor::accept_connection(void)
 {
-    TcpConnectionPtr new_conn = nullptr;
+    std::shared_ptr<TcpConnection> new_conn = nullptr;
     int client_sockfd = _acceptor_socket.accept_socket();
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
