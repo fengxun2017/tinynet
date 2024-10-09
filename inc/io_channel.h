@@ -11,7 +11,6 @@ namespace tinynet
 
 class IoChannel
 {
-
 public:
     enum ChannelState { IN_POLLER, NOTIN_POLER };
     using EventCallback = std::function<void(void)> ;
@@ -50,6 +49,8 @@ private:
     EventCallback _close_cb = nullptr;
     EventCallback _error_cb = nullptr;
 };
+
+using Channels =  std::vector<IoChannel*> ;
 
 }  // namespace tinynet
 

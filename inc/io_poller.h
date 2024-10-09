@@ -12,7 +12,6 @@ namespace tinynet
 class IoPoller
 {
 public:
-    typedef std::vector<IoChannel*> Channels;
 
     IoPoller(void);
     ~IoPoller() ;
