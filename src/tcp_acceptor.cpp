@@ -10,8 +10,16 @@
 namespace tinynet
 {
 
-TcpAcceptor::TcpAcceptor(const std::string& ip, int port)
-    : _acceptor_socket(IoSocket::TCP), _ip(ip), _port(port) {}
+TcpAcceptor::TcpAcceptor(EventLoop *event_loop, const std::string& ip, int port, std::string name)
+    : _name(name),
+      _event_loop(event_loop),
+      _acceptor_socket(IoSocket::TCP),
+      _ip(ip),
+      _port(port),
+      _channel(_acceptor_socket.get_fd(), _event_loop->get_poller(), _name + "_channel")
+{
+
+}
 
 TcpAcceptor::~TcpAcceptor() {}
 

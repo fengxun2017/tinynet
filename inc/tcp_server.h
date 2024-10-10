@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include <unordered_map>
+#include "event_loop.h"
 #include "tcp_connection.h"
 #include "tcp_acceptor.h"
 
@@ -16,7 +17,7 @@ public:
     using OnMessageCb = std::function<void(const TcpConnection&)>;
     using WriteCompleteCb = std::function<void(const TcpConnection&)>;
 
-    TcpServer(const std::string& ip, int port);
+    TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name);
     ~TcpServer(void);
 
     void set_newconn_cb(NewConnCb newconn_cb) {
@@ -46,13 +47,14 @@ private:
     void handle_message(TcpConnPtr& conn);
 
     void handle_write_complete(TcpConnPtr& conn);
-
+    std::string _name;
     TcpAcceptor _acceptor;
     std::unordered_map<int, std::shared_ptr<TcpConnection>> _connections;
     NewConnCb _newconn_cb = nullptr;
     DisconnectedCb _disconnected_cb = nullptr;
     OnMessageCb _on_message_cb = nullptr;
     WriteCompleteCb _write_complete_cb = nullptr;
+    EventLoop *_event_loop = nullptr;
 };
 
 }  // namespace tinynet

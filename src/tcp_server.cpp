@@ -2,14 +2,15 @@
 #include <utility>
 #include "logging.h"
 #include "tcp_server.h"
-#include "tcp_connection.h"
 
 namespace tinynet
 {
 
-TcpServer::TcpServer(const std::string& ip, int port)
-    : _acceptor(ip, port)
+TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name)
+    : _name(name),
+      _acceptor(ip, port, _name+"_acceptor")
 {
+    _event_loop = event_loop
     _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this));
 }
 
