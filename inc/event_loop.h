@@ -19,7 +19,7 @@ public:
 
     void quit();
 
-    std::shared_ptr<IoPoller> get_poller(void) {return _poller;}
+    std::shared_ptr<IoPoller> &get_poller(void) {return _poller;}
     
 
 private:

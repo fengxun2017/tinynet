@@ -36,7 +36,7 @@ void IoChannel::update_poll_cfg(void)
     }
 }
 
-IoChannel::IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string &name)
+IoChannel::IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name)
     : _fd(fd), _poller(poller), _name(name)
 {
     _state = NOTIN_POLER;

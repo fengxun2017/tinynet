@@ -1,8 +1,10 @@
 #include <sys/socket.h>
 #include <string>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include "io_socket.h"
 #include "tinynet_util.h"
+#include "logging.h"
 
 namespace tinynet
 {
@@ -141,9 +143,9 @@ bool IoSocket::connect_socket(const std::string& remote_ip, int remote_port) {
 }
 
 ssize_t IoSocket::write_data(const void* buffer, size_t length) {
-    if (protocol == TCP)
+    if (_protocol == TCP)
     {
-        return send(sockfd, buffer, length, 0);
+        return send(_sockfd, buffer, length, 0);
     } 
     // else if (protocol == UDP) {
     //     return sendto(sockfd, buffer, length, 0, (struct sockaddr*)&_addr, sizeof(_addr));
@@ -153,9 +155,9 @@ ssize_t IoSocket::write_data(const void* buffer, size_t length) {
 }
 
 ssize_t IoSocket::read_data(void* buffer, size_t length) {
-    if (protocol == TCP)
+    if (_protocol == TCP)
     {
-        return recv(sockfd, buffer, length, 0);
+        return recv(_sockfd, buffer, length, 0);
     } 
     // else if (protocol == UDP) {
     //     socklen_t addr_len = sizeof(addr);

@@ -1,18 +1,13 @@
 #include <cstddef>
 #include <vector>
 #include <sys/epoll.h>
+#include <unistd.h>
 #include "io_poller.h"
 #include "io_channel.h"
 #include "logging.h"
-#include "tiny_util.h"
+#include "tinynet_util.h"
 namespace tinynet
 {
-
-static const char * error_to_str (int errnum)
-{
-    static char error_str[512];
-    return strerror_r(errnum, error_str, sizeof(error_str));
-}
 
 IoPoller::IoPoller(void) :_event_wait(3)
 {
@@ -47,11 +42,11 @@ void IoPoller::poll(int timeout_ms, Channels &active_channels)
     {
         for (int index = 0; index < num; index++)
         {
-            IoChannel *channel = static_cast<IoChannel *>(_event_wait[i].data.ptr);
+            IoChannel *channel = static_cast<IoChannel *>(_event_wait[index].data.ptr);
             if (nullptr != channel)
             {
-                LOG(DEBUG) << "channel:" << channel->_name << " received the event" << std::endl;
-                channel->set_events_received(_event_wait[i].events);
+                LOG(DEBUG) << "channel:" << channel->get_name() << " received the event" << std::endl;
+                channel->set_events_received(_event_wait[index].events);
                 active_channels.push_back(channel);
             }
             else
@@ -90,7 +85,7 @@ int IoPoller::cfg_channel(int op, IoChannel &channel)
         return -1;
     }
 
-    event.events = channel._events_interested;
+    event.events = channel.get_events_interested();
     event.data.ptr = &channel;
     if (0 > epoll_ctl(_poll_fd, op, channel.get_fd(), &event))
     {

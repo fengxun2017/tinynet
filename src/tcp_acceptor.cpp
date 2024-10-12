@@ -1,11 +1,12 @@
 
 #include <netinet/in.h>
 #include <cerrno>
+#include <sstream>
+#include <functional>
 #include "tinynet_util.h"
 #include "tcp_acceptor.h"
 #include "tcp_connection.h"
 #include "logging.h"
-#include <functional>
 
 namespace tinynet
 {
@@ -69,7 +70,12 @@ void TcpAcceptor::accept_connection(void)
         // }
         LOG(INFO) << "server:[" << _ip << ":" << _port << "] receives a connection request from client:["
                 <<  client_ip << ":" << client_port << "]" << std::endl;
-        new_conn = std::make_shared<TcpConnection>(client_sockfd, client_ip, client_port, _ip, _port);
+        
+        std::ostringstream oss;
+        oss << "[" << _ip << ":" << _port << "]<->["
+                <<  client_ip << ":" << client_port << "]";
+        std::string conn_name = std::move(oss.str());
+        new_conn = std::make_shared<TcpConnection>(client_sockfd, client_ip, client_port, _ip, _port, _event_loop, conn_name);
     }
     else
     {

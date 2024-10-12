@@ -1,13 +1,16 @@
 #ifndef _TINYNET_IO_CHANNEL_H_
 #define _TINYNET_IO_CHANNEL_H_
 
-#include "io_poller.h"
+// #include "io_poller.h"
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace tinynet
 {
+
+class IoPoller;
 
 class IoChannel
 {
@@ -15,7 +18,7 @@ public:
     enum ChannelState { IN_POLLER, NOTIN_POLER };
     using EventCallback = std::function<void(void)> ;
 
-    IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string &name);
+    IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name);
     ~IoChannel();
 
     void set_reab_callback(EventCallback read_cb) {_read_cb = read_cb;}
@@ -34,6 +37,8 @@ public:
     void set_events_received(int events) {_events_received = events;}
     std::string get_name(void) {return _name;}
 
+    uint32_t get_events_interested(void) {return _events_interested;}
+    uint32_t get_events_received(void) {return _events_received;}
 private:
     void update_poll_cfg(void);
 

@@ -6,12 +6,13 @@
 #include <memory>
 #include "io_socket.h"
 #include "io_channel.h"
+#include "event_loop.h"
 
 namespace tinynet
 {
 
 class TcpConnection;
-using TcpConnPtr = std::shard_ptr<TcpConnection>
+using TcpConnPtr = std::shared_ptr<TcpConnection>;
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection>
 {
@@ -35,9 +36,9 @@ public:
     void close(void);
 
 private:
-    void onmessage_handler(void);
-    void disconnected_handler(void);
-    void write_complete_handler(void);
+    void handle_onmessage(void);
+    void handle_disconnected(void);
+    void handle_write_complete(void);
 
     std::string _name;
     int _sockfd;
@@ -46,7 +47,7 @@ private:
     std::string _server_ip;
     int _server_port;
     IoChannel _channel;
-    std::vector<char> _data_buffer(4096);
+    std::vector<char> _data_buffer;
     std::function<void(TcpConnPtr &)> _write_complete_cb = nullptr;
     std::function<void(TcpConnPtr &)> _on_message_cb = nullptr;
     std::function<void(TcpConnPtr &)> _disconected_cb = nullptr;

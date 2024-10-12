@@ -1,0 +1,28 @@
+
+cmake_minimum_required(VERSION 3.10)
+project(MyProject)
+message(STATUS "in myapp show PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
+
+set(CMAKE_C_COMPILER gcc)
+set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_CXX_FLAGS "-O1 -msse2 -std=c++11")
+add_definitions(-Wno-builtin-macro-redefined)
+
+message(STATUS "in myapp show CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+message(STATUS "in myapp show CMAKE_CURRENT_BINARY_DIR: ${CMAKE_CURRENT_BINARY_DIR}")
+
+# 添加 loglib 和 netlib 子目录
+add_subdirectory(${CMAKE_SOURCE_DIR}/../tinylog ${CMAKE_CURRENT_BINARY_DIR}/tinylog)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../tinynet ${CMAKE_CURRENT_BINARY_DIR}/tinynet)
+
+# 搜索源文件
+file(GLOB SOURCES "src/*.cpp")
+
+# 创建可执行文件
+add_executable(myapp ${SOURCES})
+
+# 链接库
+target_link_libraries(myapp loglib netlib)
+
+# 设置可执行文件输出目录
+set_target_properties(myapp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
