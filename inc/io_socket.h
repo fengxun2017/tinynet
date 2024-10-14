@@ -12,7 +12,7 @@ class IoSocket {
 public:
     enum Protocol { TCP, UDP };
 
-    IoSocket(Protocol protocol);
+    IoSocket(std::string name, Protocol protocol);
     ~IoSocket();
 
     bool bind_socket(const std::string& self_ip, int self_port);
@@ -23,6 +23,7 @@ public:
     ssize_t read_data(void* buffer, size_t length);
     int get_fd(void) {return _sockfd;}
 private:
+    std::string _name;
     int _sockfd;
     Protocol _protocol;
     struct sockaddr_in _addr;

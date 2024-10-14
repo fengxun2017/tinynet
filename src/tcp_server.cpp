@@ -8,15 +8,16 @@ namespace tinynet
 
 TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name)
     : _name(name),
-      _acceptor(event_loop, ip, port, _name+"_acceptor")
+      _acceptor(event_loop, ip, port, _name+":acceptor")
 {
     _event_loop = event_loop;
     _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this, std::placeholders::_1));
-    LOG(DEBUG) << "Service:" << ip << port <<" is created" << std::endl;
+    LOG(DEBUG) << "Service: [" << ip <<":" << port <<"] is created" << std::endl;
 }
 
 TcpServer::~TcpServer(void)
 {
+    LOG(DEBUG) << "TcpServer:" << _name << " destructor." << std::endl;
     stop();
 }
 
@@ -27,6 +28,7 @@ bool TcpServer::start(void)
 
 void TcpServer::stop(void)
 {
+    LOG(DEBUG) << "TcpServer:" << _name << " disconnects all connections." << std::endl;
     _acceptor.close();
     for (auto& item : _connections)
     {

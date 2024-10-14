@@ -15,15 +15,18 @@ namespace tinynet
 TcpAcceptor::TcpAcceptor(EventLoop *event_loop, const std::string& ip, int port, std::string name)
     : _name(name),
       _event_loop(event_loop),
-      _acceptor_socket(IoSocket::TCP),
+      _acceptor_socket(_name + ":socket", IoSocket::TCP),
       _ip(ip),
       _port(port),
-      _channel(_acceptor_socket.get_fd(), _event_loop->get_poller(), _name + "_channel")
+      _channel(_acceptor_socket.get_fd(), _event_loop->get_poller(), _name + ":channel")
 {
-    LOG(DEBUG) << "Channel " << _name << std::endl;
+    LOG(DEBUG) << "TcpAcceptor created: " << _name << std::endl;
 }
 
-TcpAcceptor::~TcpAcceptor() {}
+TcpAcceptor::~TcpAcceptor()
+{
+    LOG(DEBUG) << "TcpAcceptor:" << _name << "destructor." << std::endl;
+}
 
 bool TcpAcceptor::start() 
 {
@@ -31,18 +34,18 @@ bool TcpAcceptor::start()
         std::cerr << "Failed to bind socket to " << _ip << ":" << _port << std::endl;
         return false;
     }
-    LOG(DEBUG) << "bind to" << _ip << ":" << _port << std::endl;
+    LOG(DEBUG) << "bind to [" << _ip << ":" << _port << "] success" << std::endl;
 
     if (!_acceptor_socket.listen_socket()) {
         std::cerr << "Failed to listen on socket" << std::endl;
         return false;
     }
-    LOG(DEBUG) << "socket listen success" << std::endl;
+    LOG(DEBUG) << "listen on [" << _ip << ":" << _port << "] success" << std::endl;
 
     _channel.set_reab_callback(std::bind(&TcpAcceptor::accept_connection, this));
     _channel.enable_read();
 
-    LOG(INFO) << "server: " << _ip << ":" << _port << " start!" << std::endl;
+    LOG(INFO) << "server: [" << _ip << ":" << _port << "] start!" << std::endl;
     return true;
 }
 

@@ -9,7 +9,7 @@
 namespace tinynet
 {
 
-IoSocket::IoSocket(Protocol protocol)
+IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
 {
     _protocol = protocol;
     _sockfd = -1;
@@ -29,6 +29,7 @@ IoSocket::IoSocket(Protocol protocol)
 
 IoSocket::~IoSocket()
 {
+    LOG(DEBUG) << "IoSocket:" << _name << " destructor." << std::endl;
     if (check_fd(_sockfd)) 
     {
         close(_sockfd);

@@ -28,6 +28,7 @@ TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int clien
 
 TcpConnection::~TcpConnection() 
 {
+    LOG(DEBUG) << "TcpConnection:" << _name << " destructor." << std::endl;
     if (check_fd(_sockfd))
     {
         close();

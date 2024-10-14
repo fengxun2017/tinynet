@@ -12,10 +12,11 @@ namespace tinynet
 class TcpConnector {
 public:
     TcpConnector(EventLoop *event_loop, std::string &name, std::string& server_ip, int server_port)
-        : _name(name),_connector_socket(IoSocket::TCP),
+        : _name(name),
+        _connector_socket(_name + ":socket", IoSocket::TCP),
           _remote_ip(server_ip), _remote_port(server_port),
           _event_loop(event_loop), 
-          _channel(_connector_socket.get_fd(), _event_loop->get_poller(), _name)
+          _channel(_connector_socket.get_fd(), _event_loop->get_poller(), _name + ":channel")
     {
         
     }

@@ -39,10 +39,14 @@ void IoChannel::update_poll_cfg(void)
 IoChannel::IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name)
     : _fd(fd), _poller(poller), _name(name)
 {
+    LOG(DEBUG) << "IoCchannel created: " << _name << std::endl;
     _state = NOTIN_POLER;
 }
 
-IoChannel::~IoChannel(){}
+IoChannel::~IoChannel()
+{
+    LOG(DEBUG) << "IoChannel:" << _name << " destructor." << std::endl;
+}
 
 void IoChannel::disable_all(void)
 {
