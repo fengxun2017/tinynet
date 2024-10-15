@@ -41,6 +41,9 @@ public:
 
     void close(void);
     std::string get_name(void) {return _name;}
+
+    void enable_read(void) {_channel.enable_read();}
+    void enable_write(void) {_channel.enable_write();}
     
 private:
     void handle_onmessage(void);

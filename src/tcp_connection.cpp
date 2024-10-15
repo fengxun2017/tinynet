@@ -24,7 +24,8 @@ TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int clien
     _channel.set_reab_callback(std::bind(&TcpConnection::handle_onmessage, this));
     _channel.set_write_callback(std::bind(&TcpConnection::handle_write_complete, this));
     _channel.set_close_callback(std::bind(&TcpConnection::handle_disconnected, this));
-    LOG(DEBUG) << "TcpConnection created: " << _channel.get_name();
+
+    LOG(DEBUG) << "TcpConnection created: " << _name << std::endl;
 }
 
 TcpConnection::~TcpConnection() 
@@ -90,8 +91,7 @@ void TcpConnection::handle_onmessage(void)
     ssize_t bytes_read = read(_sockfd, _data_buffer.data(), _data_buffer.size());
     if (bytes_read > 0) 
     {
-        LOG(DEBUG) << "recv data from " << get_client_ip() 
-            <<":" << get_client_port() << ". len=" << bytes_read << std::endl;
+        LOG(DEBUG) <<_name << " recv data. " << "len=" << bytes_read << std::endl;
         
         if (nullptr != _on_message_cb)
         {

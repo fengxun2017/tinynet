@@ -82,10 +82,12 @@ void TcpAcceptor::accept_connection(void)
                 <<  client_ip << ":" << client_port << "]" << std::endl;
         
         std::ostringstream oss;
-        oss << "[" << _ip << ":" << _port << "]<->["
+        oss << "[" << _ip << ":" << _port << "<->"
                 <<  client_ip << ":" << client_port << "]";
         std::string conn_name = std::move(oss.str());
         new_conn = std::make_shared<TcpConnection>(client_sockfd, client_ip, client_port, _ip, _port, _event_loop, conn_name);
+        new_conn.enable_read();
+        new_conn.enable_write();
     }
     else
     {

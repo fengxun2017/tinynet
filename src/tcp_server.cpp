@@ -101,7 +101,7 @@ void TcpServer::handle_disconnected(TcpConnPtr conn)
 
 void TcpServer::handle_message(TcpConnPtr conn, const uint8_t *data, size_t size)
 {
-    LOG(INFO) << conn->get_client_ip() << ":" << conn->get_client_port() << "receives data\n";
+    LOG(INFO) <<_name << "receives data\n";
 #ifdef TINYNET_DEBUG
     auto item = _connections.find(conn->get_fd());
     if (item == _connections.end())
@@ -115,14 +115,14 @@ void TcpServer::handle_message(TcpConnPtr conn, const uint8_t *data, size_t size
     {
         if (_on_message_cb)
         {
-            _on_message_cb(*conn);
+            _on_message_cb(*conn, data, size);
         }
     }
 }
 
 void TcpServer::handle_write_complete(TcpConnPtr conn)
 {
-    LOG(INFO) << "the write operation to connect " << conn->get_client_ip() << ":" << conn->get_client_port() << "is complete\n";
+    LOG(INFO) << "the write operation to connect " << conn->get_client_ip() << ":" << conn->get_client_port() << " is complete\n";
 #ifdef TINYNET_DEBUG
     auto item = _connections.find(conn->get_fd());
     if (item == _connections.end())
