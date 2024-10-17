@@ -11,7 +11,7 @@ namespace tinynet
 
 class TcpConnector {
 public:
-    TcpConnector(EventLoop *event_loop, std::string &client_name);
+    TcpConnector(EventLoop *event_loop, std::string &name);
 
     ~TcpConnector();
 
@@ -20,10 +20,7 @@ public:
 private:
     std::string _name;
     IoSocket _connector_socket;
-    std::string _remote_ip;
-    int _remote_port;
     EventLoop *_event_loop;
-    IoChannel _channel;
 };
 
 }

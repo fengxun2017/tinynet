@@ -12,27 +12,27 @@ namespace tinynet
 
 class TcpServer {
 public:
-    using NewConnCb = std::function<void(TcpConnPtr&)>;
-    using DisconnectedCb = std::function<void(TcpConnPtr&)>;
-    using OnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
-    using WriteCompleteCb = std::function<void(TcpConnPtr&)>;
+    using TcpSrvNewConnCb = std::function<void(TcpConnPtr&)>;
+    using TcpSrvDisconnectedCb = std::function<void(TcpConnPtr&)>;
+    using TcpSrvOnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
+    using TcpSrvWriteCompleteCb = std::function<void(TcpConnPtr&)>;
 
     TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name);
     ~TcpServer(void);
 
-    void set_newconn_cb(NewConnCb newconn_cb) {
+    void set_newconn_cb(TcpSrvNewConnCb newconn_cb) {
         _newconn_cb = newconn_cb;
     }
 
-    void set_disconnected_cb(DisconnectedCb disconnected_cb) {
+    void set_disconnected_cb(TcpSrvDisconnectedCb disconnected_cb) {
         _disconnected_cb = disconnected_cb;
     }
 
-    void set_onmessage_cb(OnMessageCb on_message_cb) {
+    void set_onmessage_cb(TcpSrvOnMessageCb on_message_cb) {
         _on_message_cb = on_message_cb;
     }
 
-    void set_write_complete_cb(WriteCompleteCb write_complete_cb) {
+    void set_write_complete_cb(TcpSrvWriteCompleteCb write_complete_cb) {
         _write_complete_cb = write_complete_cb;
     }
 
@@ -50,10 +50,10 @@ private:
     std::string _name;
     TcpAcceptor _acceptor;
     std::unordered_map<int, TcpConnPtr> _connections;
-    NewConnCb _newconn_cb = nullptr;
-    DisconnectedCb _disconnected_cb = nullptr;
-    OnMessageCb _on_message_cb = nullptr;
-    WriteCompleteCb _write_complete_cb = nullptr;
+    TcpSrvNewConnCb _newconn_cb = nullptr;
+    TcpSrvDisconnectedCb _disconnected_cb = nullptr;
+    TcpSrvOnMessageCb _on_message_cb = nullptr;
+    TcpSrvWriteCompleteCb _write_complete_cb = nullptr;
     EventLoop *_event_loop = nullptr;
 };
 
