@@ -18,7 +18,7 @@ public:
     bool bind_socket(const std::string& self_ip, int self_port);
     bool listen_socket(int backlog = 10);
     int accept_socket(std::string& client_ip, int& client_port);
-    bool connect_socket(const std::string& remote_ip, int remote_port);
+    int connect_socket(struct sockaddr* addr);
     ssize_t write_data(const void* buffer, size_t length);
     ssize_t read_data(void* buffer, size_t length);
     int get_fd(void) {return _sockfd;}

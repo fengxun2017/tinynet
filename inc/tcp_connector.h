@@ -15,12 +15,15 @@ public:
 
     ~TcpConnector();
 
-    TcpConnPtr connect(std::string& server_ip, int server_port);
+    void connect(std::string& server_ip, int server_port);
 
 private:
+    void handle_write_complete(void);
+
     std::string _name;
     IoSocket _connector_socket;
     EventLoop *_event_loop;
+    IoChannel _channel;
 };
 
 }
