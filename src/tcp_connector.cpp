@@ -24,16 +24,14 @@ TcpConnector::~TcpConnector()
     LOG(DEBUG) << _name << "destructed" << std::endl;
 }
 
-void TcpConnector::connect(std::string& server_ip, int server_port)
+bool TcpConnector::connect(std::string& server_ip, int server_port)
 {
-    struct sockaddr_in local_addr;
-    char local_ip[INET_ADDRSTRLEN] = {'U','N','K','N','O','W'};
-    int local_port = 0;
-    socklen_t addr_len = sizeof(struct sockaddr_in);
-    TcpConnPtr new_conn = nullptr;
-
+    bool ret;
     struct sockaddr_in server_addr;
+    socklen_t addrlen = sizeof(server_addr);
 
+    _server_ip = server_ip;
+    _server_port = server_port;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(server_port);
@@ -43,51 +41,84 @@ void TcpConnector::connect(std::string& server_ip, int server_port)
     {
         LOG(ERROR) << "IP:" << server_ip << " is not a valid network address. " 
                 << "or af does not contain a valid address family." << std::endl;
-        return ;
+        return false;
     }
 
-    ret = _connector_socket.connect_socket(server_addr);
-    switch (ret)
+    state = _connector_socket.connect_socket((struct sockaddr*)&server_addr, addrlen);
+    switch (state)
     {
         case 0:
         case EINPROGRESS:
-            channel.set_write_callback(std::bind(&TcpConnector::handle_write_complete, this));
-            chennel.enable_read();
+            _channel.set_write_callback(std::bind(&TcpConnector::handle_write_complete, this));
+            _channel.enable_write();
+            ret = true;
             break;
-        
+
         default:
-            LOG(ERROR) << _name " connect to [" << server_ip << ":" << server_port << "] failed, err info:" << error_to_str(errno); 
+            ret = false;
+            LOG(ERROR) << _name << " connect to [" << server_ip << ":" << server_port << "] failed, err info:" << error_to_str(errno);
+            _connector_socket.close();
             break;
 
     }
-    bool ret =  _connector_socket.connect_socket(server_ip, server_port);
-    if (ret)
+    return ret;
+}
+
+void TcpConnector::handle_write_complete(void)
+{
+    int ret;
+    TcpConnPtr new_conn = nullptr;
+    struct sockaddr_in local_addr;
+    char local_ip[INET_ADDRSTRLEN] = {'U','N','K','N','O','W'};
+    int local_port = 0;
+    socklen_t local_addr_len = sizeof(struct sockaddr_in);
+
+    struct sockaddr_in peer_addr;
+    char peer_ip[INET_ADDRSTRLEN] = {'U','N','K','N','O','W'};
+    int peer_port = 0;
+    socklen_t peer_addr_len = sizeof(struct sockaddr_in);
+
+    LOG(DEBUG) << _name << " handle_write_complete" << std::endl;
+    _channel.disable_write();
+
+    ret = _connector_socket.get_socket_error();
+    if ( 0 == ret) 
     {
-        if (0 == getsockname(_connector_socket.get_fd(), (struct sockaddr*)&local_addr, &addr_len))
+        // connect success
+        if (0 == getsockname(_connector_socket.get_fd(), (struct sockaddr*)&local_addr, &local_addr_len))
         {
             if(NULL == inet_ntop(AF_INET, &(local_addr.sin_addr.s_addr), local_ip, sizeof(local_ip)))
             {
                 LOG(WARNING) << "TcpConnector::connect getsockname failed, err info:" << error_to_str(errno) << std::endl;
             }
             local_port = ntohs(local_addr.sin_port);
-        }    
+        }
+        if (0 == getpeername(_connector_socket.get_fd(), (struct sockaddr*)&peer_addr, &peer_addr_len))
+        {
+            if(NULL == inet_ntop(AF_INET, &(peer_addr.sin_addr.s_addr), peer_ip, sizeof(peer_ip)))
+            {
+                LOG(WARNING) << "TcpClient::connect getpeername failed, err info:" << error_to_str(errno) << std::endl;
+            }
+            peer_port = ntohs(peer_addr.sin_port);
+        }
+
         new_conn = std::make_shared<TcpConnection>(_connector_socket.get_fd(), 
-                local_ip, local_port, server_ip, server_port, _event_loop, _name+":conn");
+                local_ip, local_port, peer_ip, peer_port, _event_loop, _name+":conn");
+        if (_newconn_cb)
+        {
+            _newconn_cb(new_conn);
+        }
+    } 
+    else
+    {
+        LOG(ERROR) << _name << " connect failed, err info: " << error_to_str(ret);
+        if (_disconnected_cb)
+        {
+            _disconnected_cb(nullptr);
+        }
+        
     }
 
-    return new_conn;
-}
-
-void TcpConnector::handle_write_complete(void)
-{
-    LOG(DEBUG) << _name << " handle_write_complete" << std::endl;
-        getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &so_error, &len);
-        if (so_error == 0) {
-            // 连接成功
-        } else {
-            // 连接失败，错误码是so_error
-
-        }
 
 
 }

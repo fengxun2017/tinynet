@@ -29,12 +29,19 @@ IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
 
 IoSocket::~IoSocket()
 {
-    if (check_fd(_sockfd)) 
-    {
-        close(_sockfd);
-    }
+    close();
     LOG(DEBUG) << _name << " has been destructed.." << std::endl;
 }
+
+int IoSocket::close(void)
+{
+    if (check_fd(_sockfd)) 
+    {
+        ::close(_sockfd);
+        _sockfd = -1;
+    }
+}
+
 
 bool IoSocket::bind_socket(const std::string& self_ip, int self_port)
 {
@@ -109,10 +116,10 @@ int IoSocket::accept_socket(std::string& client_ip, int& client_port)
     return new_sock;
 }
 
-int IoSocket::connect_socket(struct sockaddr* addr) {
+int IoSocket::connect_socket(struct sockaddr* addr, socklen_t addrlen) {
     int ret = 0;
 
-    ret = connect(_sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) 
+    ret = connect(_sockfd, addr, addrlen);
 
     return ret;
 }
@@ -140,6 +147,20 @@ ssize_t IoSocket::read_data(void* buffer, size_t length) {
     // }
 
     return -1;
+}
+
+int IoSocket::get_socket_error(void)
+{
+    int optval;
+    socklen_t optlen = sizeof(optval);
+
+    if (::getsockopt(_sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+    {
+        LOG(ERROR) << "IoSocket::get_socket_error failed, err info:" << error_to_str(errno);
+        optval = errno;
+    }
+
+    return optval;
 }
 
 }  // namespace tinynet
