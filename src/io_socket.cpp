@@ -33,7 +33,7 @@ IoSocket::~IoSocket()
     LOG(DEBUG) << _name << " has been destructed.." << std::endl;
 }
 
-int IoSocket::close(void)
+void IoSocket::close(void)
 {
     if (check_fd(_sockfd)) 
     {

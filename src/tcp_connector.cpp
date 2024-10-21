@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <sstream>
 #include "tcp_connector.h"
 #include "logging.h"
 #include "tinynet_util.h"
@@ -14,7 +15,7 @@ TcpConnector::TcpConnector(EventLoop *event_loop, std::string name)
     : _name(name),
     _connector_socket(_name + ":socket", IoSocket::TCP),
     _event_loop(event_loop),
-    _channel(_connector_socket.get_fd(), event_loop->get_poller(), _name + ":channel"),
+    _channel(_connector_socket.get_fd(), event_loop->get_poller(), _name + ":channel")
 {
     LOG(DEBUG) << _name << " created" << std::endl;
 }
@@ -29,6 +30,7 @@ bool TcpConnector::connect(std::string& server_ip, int server_port)
     bool ret;
     struct sockaddr_in server_addr;
     socklen_t addrlen = sizeof(server_addr);
+    int _errno;
 
     _server_ip = server_ip;
     _server_port = server_port;
@@ -45,7 +47,13 @@ bool TcpConnector::connect(std::string& server_ip, int server_port)
     }
 
     state = _connector_socket.connect_socket((struct sockaddr*)&server_addr, addrlen);
-    switch (state)
+    /* 
+       Currently, only non-blocking sockets are used. 
+       Therefore, you need to obtain the error judgment status
+    */
+    _errno = (state == 0) ? 0 : errno;
+    LOG(DEBUG) << _name << " connect return state:" << _errno << std::endl;
+    switch (_errno)
     {
         case 0:
         case EINPROGRESS:
@@ -105,9 +113,12 @@ void TcpConnector::handle_write_complete(void)
             }
             peer_port = ntohs(peer_addr.sin_port);
         }
-
+        std::ostringstream oss;
+        oss << "[" << local_ip << ":" << local_port << "<->"
+                <<  peer_ip << ":" << peer_port << "]";
+        std::string conn_name = std::move(oss.str());
         new_conn = std::make_shared<TcpConnection>(_connector_socket.get_fd(), 
-                local_ip, local_port, peer_ip, peer_port, _event_loop, _name+":conn");
+                local_ip, local_port, peer_ip, peer_port, _event_loop, conn_name);
 
     } 
     else

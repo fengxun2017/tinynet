@@ -23,7 +23,7 @@ public:
     ssize_t read_data(void* buffer, size_t length);
     int get_fd(void) {return _sockfd;}
     int get_socket_error(void);
-    int close(void);
+    void close(void);
 private:
     std::string _name;
     int _sockfd;

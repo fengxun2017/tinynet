@@ -41,6 +41,7 @@ void TcpConnection::close()
 {
     if (check_fd(_sockfd))
     {
+        LOG(INFO) << _name << " disconect" << std::endl;
         ::close(_sockfd);
         _sockfd = -1;
     }

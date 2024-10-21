@@ -37,15 +37,17 @@ void TcpClient::handle_new_connection(TcpConnPtr conn)
 {
     if (nullptr != conn)
     {
-        conn->set_disconnected_cb(std::bind(&TcpClient::handle_disconnected, this, std::placeholders::_1));
-        conn->set_onmessage_cb(std::bind(&TcpClient::handle_message, this,
+        _conn = conn;
+        _conn->set_disconnected_cb(std::bind(&TcpClient::handle_disconnected, this, std::placeholders::_1));
+        _conn->set_onmessage_cb(std::bind(&TcpClient::handle_message, this,
                                     std::placeholders::_1,
                                     std::placeholders::_2,
                                     std::placeholders::_3));
-        conn->set_write_complete_cb(std::bind(&TcpClient::handle_write_complete, this, std::placeholders::_1));
+        _conn->set_write_complete_cb(std::bind(&TcpClient::handle_write_complete, this, std::placeholders::_1));
+        _conn->enable_read();
         if (_newconn_cb)
         {
-            _newconn_cb(conn);
+            _newconn_cb(_conn);
         }
     }
     else 
