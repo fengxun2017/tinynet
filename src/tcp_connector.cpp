@@ -81,10 +81,14 @@ void TcpConnector::handle_write_complete(void)
     LOG(DEBUG) << _name << " handle_write_complete" << std::endl;
     _channel.disable_write();
 
+    /* After epoll indicates writability, use getsockopt to read the SO_ERROR option at level SOL_SOCKET to determine whether
+        connect() completed successfully (SO_ERROR is zero) or unsuccessfully 
+    */
     ret = _connector_socket.get_socket_error();
     if ( 0 == ret) 
     {
         // connect success
+        LOG(DEBUG) << _name << " connect success." << std::endl;
         if (0 == getsockname(_connector_socket.get_fd(), (struct sockaddr*)&local_addr, &local_addr_len))
         {
             if(NULL == inet_ntop(AF_INET, &(local_addr.sin_addr.s_addr), local_ip, sizeof(local_ip)))
@@ -104,21 +108,17 @@ void TcpConnector::handle_write_complete(void)
 
         new_conn = std::make_shared<TcpConnection>(_connector_socket.get_fd(), 
                 local_ip, local_port, peer_ip, peer_port, _event_loop, _name+":conn");
-        if (_newconn_cb)
-        {
-            _newconn_cb(new_conn);
-        }
+
     } 
     else
     {
         LOG(ERROR) << _name << " connect failed, err info: " << error_to_str(ret);
-        if (_disconnected_cb)
-        {
-            _disconnected_cb(nullptr);
-        }
-        
     }
 
-
+    if (_newconn_cb)
+    {
+        _newconn_cb(new_conn);
+    }
+}
 
 }

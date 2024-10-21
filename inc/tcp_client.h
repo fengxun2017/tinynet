@@ -26,6 +26,7 @@ public:
         _newconn_cb = newconn_cb;
     }
 
+    /* NOTE: TcpConnPtr * maybe nullptr in disconnected_cb */
     void set_disconnected_cb(TcpClientDisconnectedCb disconnected_cb) {
         _disconnected_cb = disconnected_cb;
     }
