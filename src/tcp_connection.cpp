@@ -45,7 +45,6 @@ void TcpConnection::close()
         ::close(_sockfd);
         _sockfd = -1;
     }
-
 }
 
 void TcpConnection::write_data(const void* buffer, size_t length)

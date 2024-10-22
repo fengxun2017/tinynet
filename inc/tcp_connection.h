@@ -39,7 +39,6 @@ public:
 
     int get_client_port(void);
 
-    void close(void);
     std::string get_name(void) {return _name;}
 
     void enable_read(void) {_channel.enable_read();}
@@ -50,6 +49,7 @@ private:
     void handle_onmessage(void);
     void handle_disconnected(void);
     void handle_write_complete(void);
+    void close(void);
 
     std::string _name;
     int _sockfd;
