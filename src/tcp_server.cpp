@@ -35,7 +35,8 @@ void TcpServer::stop(void)
     for (auto& item : _connections)
     {
         LOG(INFO) << "TcpServer:" << _name << " disconnect from " << (item.second)->get_name() << std::endl;
-        (item.second)->close();
+        // (item.second)->close();
+        (item.second)->disable_conn();
     }
     _connections.clear();
 }
@@ -84,11 +85,9 @@ void TcpServer::handle_disconnected(TcpConnPtr conn)
     auto item = _connections.find(conn->get_fd());
     if (item != _connections.end())
     {
-
         if (_disconnected_cb) {
             _disconnected_cb(conn);
         }
-
         // The release should be at the end
         (void)_connections.erase(item);
     }

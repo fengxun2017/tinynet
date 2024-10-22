@@ -2,3 +2,6 @@ use uniq_ptr
 use nocopyable
 不要使用delete
 使用const修饰string引用。
+
+server端关闭，而client没有关闭连接（该连接对应的socket,还在epoll中被监听），当client端尝试继续写时会收到如下事件: 
+    DEBUG: 2024-10-2211:25:46 [127.0.0.1:36884<->127.0.0.1:14000]:channel: recv event: EPOLLIN EPOLLERR EPOLLHUP

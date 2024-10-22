@@ -44,7 +44,8 @@ public:
 
     void enable_read(void) {_channel.enable_read();}
     void enable_write(void) {_channel.enable_write();}
-    
+    void disable_conn(void);
+
 private:
     void handle_onmessage(void);
     void handle_disconnected(void);

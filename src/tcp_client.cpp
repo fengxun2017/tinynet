@@ -19,7 +19,11 @@ TcpClient::TcpClient(EventLoop *event_loop, std::string client_name) :
 
 TcpClient::~TcpClient()
 {
-    
+    if (_conn)
+    {
+        _conn->disable_conn();
+        _conn = nullptr;
+    }
     LOG(DEBUG) << "client:" << _name << " has been destructed" << std::endl;
 }
 
