@@ -57,7 +57,7 @@ void TcpConnection::write_data(const void* buffer, size_t length)
         /* TODO: Implement asynchronous write using cache.*/
         while (left_size)
         {
-            bytes_write = write(_sockfd, buffer, left_size);
+            bytes_write = ::write(_sockfd, buffer, left_size);
             LOG(DEBUG) << "[" << _server_ip << ":" << _server_port << "] send to [" 
                 << _client_ip << ":" << _client_port 
                 << "], bytes_write = " << bytes_write << std::endl;
@@ -112,10 +112,6 @@ void TcpConnection::handle_onmessage(void)
 void TcpConnection::handle_disconnected(void)
 {
     disable_conn();
-    if (nullptr != _disconected_cb)
-    {
-        _disconected_cb(shared_from_this());
-    }
 }
 
 void TcpConnection::handle_write_complete(void)
@@ -130,5 +126,11 @@ void TcpConnection::disable_conn(void)
 {
     _channel.disable_all();
     close();
+
+    // FIXME: Perhaps callbacks shouldn't be called in this context
+    if (nullptr != _disconected_cb)
+    {
+        _disconected_cb(shared_from_this());
+    }
 }
 } // tinynet

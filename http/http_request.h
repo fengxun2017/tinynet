@@ -6,13 +6,15 @@
 
 class HttpRequest {
 public:
-    enum HttpMethod { GET, POST, UNKNOWN };
+    enum HttpMethod { GET = 0, POST, UNKNOWN };
+    enum HttpVersion {HTTP10 = 0, HTTP11, UNKNOWN};
 
-    HttpRequest() : method(UNKNOWN) {}
+    HttpRequest() : _method(UNKNOWN) {}
     ~HttpRequest() {}
 
     bool parse(const std::string& raw_request);
-
+    HttpVersion get_version(void);
+    const std::string get_header(const std::string &key);
 private:
     static const std::string CRLF;
     static const std::string CRLFCRLF;

@@ -67,6 +67,34 @@ bool HttpRequest::parse(const std::string &raw_request) {
     return true;
 }
 
+const std::string HttpRequest::get_header(const std::string &key);
+{
+    string result;
+    auto item = _headers.find(field);
+    if (it != _headers.end())
+    {
+      result = it->second;
+    }
+    return result;
+}
+
+HttpVersion HttpRequest::get_version(void)
+{
+    HttpVersion ver = UNKNOW;
+    
+    if ("HTTP/1.1" == _version)
+    {
+        ver = HTTP11;
+    }
+    else if ("HTTP/1.0" == _version)
+    {
+        ver = HTTP10;
+    }
+
+    return ver;
+}
+
+
 void HttpRequest::parse_headers(const std::string& headers_str) {
     std::string::size_type start = 0;
     std::string::size_type end = headers_str.find(CRLF);
@@ -82,7 +110,7 @@ void HttpRequest::parse_headers(const std::string& headers_str) {
             _headers.emplace(std::make_pair(std::move(key), std::move(val)));
         }
         start = end + 2;
-        end = headers_str.find("\r\n", start);
+        end = headers_str.find(CRLF, start);
     }
 }
 
