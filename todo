@@ -6,3 +6,5 @@ use nocopyable
 server端程序被kill掉了，而client没有关闭连接（该连接对应的socket,还在epoll中被监听），，则会不停收到EPOLLIN事件，当client端尝试继续写时会收到如下事件: 
     DEBUG: 2024-10-2211:25:46 [127.0.0.1:36884<->127.0.0.1:14000]:channel: recv event: EPOLLIN EPOLLERR EPOLLHUP
     server端被kill掉，服务端口没有被监听。client的写操作，服务端会回复RST.
+
+使用 gcc -fsanitize=leak

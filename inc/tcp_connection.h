@@ -4,6 +4,7 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include <any>
 #include "io_socket.h"
 #include "io_channel.h"
 #include "event_loop.h"
@@ -45,6 +46,10 @@ public:
     void enable_write(void) {_channel.enable_write();}
     void disable_conn(void);
 
+    void setContext(const std::any &context) { _context = context; }
+
+    std::any &getContext() const { return _context; }
+
 private:
     void handle_onmessage(void);
     void handle_disconnected(void);
@@ -60,6 +65,7 @@ private:
     IoChannel _channel;
     std::vector<uint8_t> _data_buffer;
     TcpConnState _state;
+    std::any _context;
     std::function<void(TcpConnPtr)> _write_complete_cb = nullptr;
     std::function<void(TcpConnPtr, const uint8_t *, size_t)> _on_message_cb = nullptr;
     std::function<void(TcpConnPtr)> _disconected_cb = nullptr;

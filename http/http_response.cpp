@@ -11,7 +11,7 @@ void HttpResponse::set_body(const std::string &body_content)
 
 std::string HttpResponse::to_string() const 
 {
-    std::string response = _version + " " + std::to_string(status_code) + " " + status_message + "\r\n";
+    std::string response = _version + " " + std::to_string(_status_code) + " " + _status_message + "\r\n";
     for (const auto& header : _headers) {
         response += header.first + ": " + header.second + "\r\n";
     }

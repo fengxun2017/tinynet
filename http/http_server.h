@@ -21,9 +21,9 @@ public:
     void start();
 
 private:
-    void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, size_t size);
-    void HttpServer::disconnected_cb(tinynet::TcpConnPtr &conn);
-    void HttpServer::new_conn_cb(tinynet::TcpConnPtr &conn);
+    void on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, size_t size);
+    void disconnected_cb(tinynet::TcpConnPtr &conn);
+    void new_conn_cb(tinynet::TcpConnPtr &conn);
     std::string _name;
     TcpServer _tcp_server;
     HttpOnRequestCb _onrequest_cb = nullptr;

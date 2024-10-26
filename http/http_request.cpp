@@ -1,15 +1,17 @@
 
+#include <sstream>
+#include "logging.h"
 #include "http_request.h"
 
 namespace tinynet
 {
 
-const std::string CRLF = "\r\n";
-const std::string CRLFCRLF = "\r\n\r\n";
+const std::string HttpRequest::CRLF = "\r\n";
+const std::string HttpRequest::CRLFCRLF = "\r\n\r\n";
 
-HttpMethod HttpRequest::convert_to_method(std::string &method_str)
+HttpRequest::HttpMethod HttpRequest::convert_to_method(std::string &method_str)
 {
-    HttpMethod method = UNKNOWN;
+    HttpMethod method = UNKNOWN_METHOD;
 
     if (method_str == "GET")
     {
@@ -21,7 +23,7 @@ HttpMethod HttpRequest::convert_to_method(std::string &method_str)
     }
     else
     {
-         method = UNKNOWN;
+         method = UNKNOWN_METHOD;
     }
 
     return method;
@@ -31,6 +33,7 @@ bool HttpRequest::parse(const std::string &raw_request) {
     std::string::size_type method_end = raw_request.find(' ');
     if (method_end == std::string::npos)
     {
+        LOG(ERROR) << "http request error: can not find method" << std::endl;
         return false;
     }
     std::string method_str = std::move(raw_request.substr(0, method_end));
@@ -40,60 +43,36 @@ bool HttpRequest::parse(const std::string &raw_request) {
     std::string::size_type url_end = raw_request.find(' ', url_start);
     if (url_end == std::string::npos)
     {
+        LOG(ERROR) << "http request error: can not find URL" << std::endl;
         return false;
     }
-    std::string _URL = std::move(raw_request.substr(url_start, url_end - url_start));
+    _URL = std::move(raw_request.substr(url_start, url_end - url_start));
 
     std::string::size_type version_start = url_end + 1;
     std::string::size_type version_end = raw_request.find(CRLF, version_start);
     if (version_end == std::string::npos)
     {
+        LOG(ERROR) << "http request error: can not find version" << std::endl;
         return false;
     }
-    std::string _version = std::move(raw_request.substr(version_start, version_end - version_start));
+    _version = std::move(raw_request.substr(version_start, version_end - version_start));
 
     std::string::size_type headers_start = raw_request.find(CRLF) + 2;
     std::string::size_type headers_end = raw_request.find(CRLFCRLF);
     if (headers_start == std::string::npos || headers_end == std::string::npos)
     {
+        LOG(ERROR) << "http request error: header format error" << std::endl;
         return false;
     }
     /* Make each header keep |name|:|sp|val|CRLF structure */
-    headers_end -= 2;
-
+    headers_end += 2;
     std::string headers_str = std::move(raw_request.substr(headers_start, headers_end - headers_start));
     parse_headers(headers_str);
 
+    std::string::size_type body_start = headers_end + 2;
+    _body = std::move(raw_request.substr(body_start, raw_request.size()-body_start));
     return true;
 }
-
-const std::string HttpRequest::get_header(const std::string &key);
-{
-    string result;
-    auto item = _headers.find(field);
-    if (it != _headers.end())
-    {
-      result = it->second;
-    }
-    return result;
-}
-
-HttpVersion HttpRequest::get_version(void)
-{
-    HttpVersion ver = UNKNOW;
-    
-    if ("HTTP/1.1" == _version)
-    {
-        ver = HTTP11;
-    }
-    else if ("HTTP/1.0" == _version)
-    {
-        ver = HTTP10;
-    }
-
-    return ver;
-}
-
 
 void HttpRequest::parse_headers(const std::string& headers_str) {
     std::string::size_type start = 0;
@@ -106,12 +85,50 @@ void HttpRequest::parse_headers(const std::string& headers_str) {
             std::string key = line.substr(0, delimiter);
             /* There is also a space after the delimiter */
             std::string val = line.substr(delimiter + 2);
-
+            // LOG(DEBUG) << "key:" << key << " val:" << val << std::endl;
             _headers.emplace(std::make_pair(std::move(key), std::move(val)));
         }
         start = end + 2;
         end = headers_str.find(CRLF, start);
     }
+}
+
+std::string HttpRequest::get_header(const std::string &key)
+{
+    std::string result;
+    auto item = _headers.find(key);
+    if (item != _headers.end())
+    {
+      result = item->second;
+    }
+    return result;
+}
+
+std::string HttpRequest::dump_heads(void) const
+{
+    std::ostringstream oss;
+    oss << "{";
+    for (const auto &pair : _headers) {
+        oss << " " << pair.first << ":" << pair.second << ",";
+    }
+    return oss.str();
+}
+
+
+HttpRequest::HttpVersion HttpRequest::get_version(void)
+{
+    HttpVersion ver = UNKNOWN_VER;
+    
+    if ("HTTP/1.1" == _version)
+    {
+        ver = HTTP11;
+    }
+    else if ("HTTP/1.0" == _version)
+    {
+        ver = HTTP10;
+    }
+
+    return ver;
 }
 
 } // tinynet

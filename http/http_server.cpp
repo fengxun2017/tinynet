@@ -1,25 +1,33 @@
 
+#include<any>
 #include "http_server.h"
+#include "http_request.h"
 #include "logging.h"
+#include "event_loop.h"
+
 namespace tinynet
 {
 
 void HttpServer::new_conn_cb(tinynet::TcpConnPtr &conn)
 {
+    conn->set_context(HttpRequest());
     LOG(DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
 }
 
 void HttpServer::disconnected_cb(tinynet::TcpConnPtr &conn)
 {
-    LOG(DEBUG) << "echo_server: " << conn->get_name() << " disconnected" << std::endl;
+    LOG(DEBUG) << _name << " disconnected:" << conn->get_name() << std::endl;
 }
 
 void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, size_t size)
 {
-    std::string raw_request(static_cast<const char*>(data), size);
-    LOG(DEBUG) << raw_request << std::endl;
+    bool close = false;
+    std::string raw_request(reinterpret_cast<const char*>(data), size);
+    LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
 
-    HttpRequest request;
+    std::any &context = conn->get_context();
+    HttpRequest &request = std::any_cast<HttpRequest&>(context);
+
     if (!request.parse(raw_request))
     {
         LOG(ERROR) << _name << "Failed to parse HTTP request" << std::endl;
@@ -27,10 +35,10 @@ void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, s
     }
 
     HttpResponse response;
-    if (request.method == HttpRequest::GET)
+    if (_onrequest_cb)
     {
-        response.set_body("Hello, world!");
-    } 
+        _onrequest_cb(request, response);
+    }
     else
     {
         response.set_status(501, "Not Implemented");
@@ -40,12 +48,20 @@ void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, s
     std::string raw_response = response.to_string();
     conn->write_data(static_cast<const void*>(raw_response.data()), raw_response.size());
 
-    std::string connection = request.get_header("Connection");
-    bool close = false;
-    if ((request.get_version() == HttpRequest::HTTP10 && connection != "Keep-Alive")
-        || connection == "close"
-        || (request.get_version() == HttpRequest::UNKNOWN))
+    const std::string &connection = request.get_header("Connection");
+    if (request.get_version() == HttpRequest::HTTP10 && connection != "Keep-Alive")
     {
+        LOG(DEBUG) << "http1.0 and not set keep-alive" << std::endl;
+        close = true;
+    }
+    if (connection == "close")
+    {
+        LOG(DEBUG) << " http client need to close" << std::endl;
+        close = true;
+    }
+    if (request.get_version() == HttpRequest::UNKNOWN_VER)
+    {
+        LOG(DEBUG) << "http unknown version, close connection" << std::endl;
         close = true;
     }
     if (close)

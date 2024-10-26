@@ -3,9 +3,12 @@
 #include <string>
 #include <unordered_map>
 
+namespace tinynet
+{
+
 class HttpResponse {
 public:
-    HttpResponse() : status_code(200), status_message("OK") {}
+    HttpResponse() : _status_code(200), _status_message("OK") {}
 
     void set_status(int code, const std::string &message)
     {
@@ -32,4 +35,5 @@ private:
     std::string _body_info;
 };
 
+} // namespace tiynet
 #endif // _TINYNET_HTTP_RESP_H_
