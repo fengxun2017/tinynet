@@ -33,6 +33,7 @@ private:
     std::string _status_message;
     std::unordered_map<std::string, std::string> _headers;
     std::string _body_info;
+    uint32_t content_len = 0;
 };
 
 } // namespace tiynet

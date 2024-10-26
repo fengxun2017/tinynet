@@ -46,9 +46,9 @@ public:
     void enable_write(void) {_channel.enable_write();}
     void disable_conn(void);
 
-    void setContext(const std::any &context) { _context = context; }
+    void set_context(const std::any &context) { _context = context; }
 
-    std::any &getContext() const { return _context; }
+    std::any &get_context()  { return _context; }
 
 private:
     void handle_onmessage(void);
