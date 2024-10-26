@@ -8,34 +8,26 @@
 namespace tinynet
 {
 
-void HttpServer::new_conn_cb(tinynet::TcpConnPtr &conn)
+void HttpServer::new_conn_cb(TcpConnPtr &conn)
 {
     conn->set_context(HttpRequest());
     LOG(DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
 }
 
-void HttpServer::disconnected_cb(tinynet::TcpConnPtr &conn)
+void HttpServer::disconnected_cb(TcpConnPtr &conn)
 {
     LOG(DEBUG) << _name << " disconnected:" << conn->get_name() << std::endl;
 }
 
-void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, size_t size)
+void HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request, HttpRequest &request, HttpServer::HttpOnRequestCb onrequest_cb)
 {
     bool close = false;
-    bool bad_request =false;
-
-    std::string raw_request(reinterpret_cast<const char*>(data), size);
-    LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
-
-    // std::any &context = conn->get_context();
-    // HttpRequest &request = std::any_cast<HttpRequest&>(context);
-    HttpRequest request;
+    bool parse_success = request.parse(raw_request);
     HttpResponse response;
 
-    bool parse_success = request.parse(raw_request);
     if (!parse_success)
     {
-        LOG(ERROR) << _name << ": Failed to parse HTTP request" << std::endl;
+        LOG(ERROR) << ": Failed to parse HTTP request" << std::endl;
         response.set_status(400, "Bad Request");
         close = true;
     }
@@ -45,19 +37,19 @@ void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, s
         {
             if (request.get_version() > HttpRequest::HTTP11)
             {
-                LOG(INFO) << _name << ": HTTP Version Not Supported" << std::endl; 
+                LOG(INFO) << ": HTTP Version Not Supported" << std::endl; 
                 response.set_status(505, "HTTP Version Not Supported");
                 close = true;
             }
             else
             {
-                if (_onrequest_cb)
+                if (onrequest_cb)
                 {
-                    _onrequest_cb(request, response);
+                    onrequest_cb(request, response);
                 }
                 else
                 {
-                    LOG(INFO) << _name << ": The HTTP request handler is not registered" << std::endl;
+                    LOG(INFO) << "The HTTP request handler is not registered" << std::endl;
                     response.set_status(501, "Not Implemented");
                     response.set_body("Unsupported method");
                     close = true;
@@ -66,12 +58,12 @@ void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, s
             std::string connection = request.get_header("Connection");
             if (request.get_version() == HttpRequest::HTTP10 && connection != "Keep-Alive")
             {
-                LOG(DEBUG) << _name << ": http1.0 and not set keep-alive" << std::endl;
+                LOG(DEBUG) << ": http1.0 and not set keep-alive" << std::endl;
                 close = true;
             }
             if (connection == "close")
             {
-                LOG(DEBUG) << _name << ": http client need to close" << std::endl;
+                LOG(DEBUG) << ": http client need to close" << std::endl;
                 close = true;
             }
         }
@@ -88,6 +80,21 @@ void HttpServer::on_message_cb(tinynet::TcpConnPtr &conn, const uint8_t *data, s
     {
         conn->disable_conn();
     }
+}
+
+void HttpServer::on_message_cb(TcpConnPtr &conn, const uint8_t *data, size_t size)
+{
+    bool close = false;
+    bool bad_request =false;
+
+    std::string raw_request(reinterpret_cast<const char*>(data), size);
+    LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
+
+    std::any &context = conn->get_context();
+    HttpRequest &request = std::any_cast<HttpRequest&>(context);
+    // HttpRequest request;
+
+    process_http_request(conn, raw_request, request, _onrequest_cb);
 }
 
 HttpServer::HttpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name)
