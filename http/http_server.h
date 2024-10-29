@@ -19,7 +19,7 @@ public:
     ~HttpServer(){}
     void set_onrequest_cb(HttpOnRequestCb cb);
     void start();
-    static void process_http_request(TcpConnPtr &conn, std::string &raw_request, HttpRequest &request, HttpServer::HttpOnRequestCb onrequest_cb);
+    static bool process_http_request(TcpConnPtr &conn, std::string &raw_request, HttpRequest &request, HttpServer::HttpOnRequestCb onrequest_cb);
 
 private:
     void on_message_cb(TcpConnPtr &conn, const uint8_t *data, size_t size);

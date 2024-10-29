@@ -47,8 +47,10 @@ public:
     void disable_conn(void);
 
     void set_context(const std::any &context) { _context = context; }
-
     std::any &get_context()  { return _context; }
+
+    void set_context2(const std::any &context) { _context2 = context; }
+    std::any &get_context2()  { return _context2; }
 
 private:
     void handle_onmessage(void);
@@ -66,6 +68,7 @@ private:
     std::vector<uint8_t> _data_buffer;
     TcpConnState _state;
     std::any _context;
+    std::any _context2;
     std::function<void(TcpConnPtr)> _write_complete_cb = nullptr;
     std::function<void(TcpConnPtr, const uint8_t *, size_t)> _on_message_cb = nullptr;
     std::function<void(TcpConnPtr)> _disconected_cb = nullptr;

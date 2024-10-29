@@ -19,12 +19,14 @@ void HttpServer::disconnected_cb(TcpConnPtr &conn)
     LOG(DEBUG) << _name << " disconnected:" << conn->get_name() << std::endl;
 }
 
-void HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request, HttpRequest &request, HttpServer::HttpOnRequestCb onrequest_cb)
+bool HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request, HttpRequest &request, HttpServer::HttpOnRequestCb onrequest_cb)
 {
     bool close = false;
-    bool parse_success = request.parse(raw_request);
+    bool parse_success;
     HttpResponse response;
+    bool recv_complete = false;
 
+    parse_success = request.parse(raw_request);
     if (!parse_success)
     {
         LOG(ERROR) << ": Failed to parse HTTP request" << std::endl;
@@ -35,6 +37,7 @@ void HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request
     {
         if (request.recv_complete())
         {
+            recv_complete = true;
             // LOG(DEBUG) << "RECV COMPLETE" << std::endl;
             if (request.get_version() > HttpRequest::HTTP11)
             {
@@ -83,6 +86,8 @@ void HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request
     {
         conn->disable_conn();
     }
+
+    return recv_complete;
 }
 
 void HttpServer::on_message_cb(TcpConnPtr &conn, const uint8_t *data, size_t size)

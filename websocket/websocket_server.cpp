@@ -43,7 +43,9 @@ void WebSocketServer::handle_write_complete(TcpConnPtr &conn)
 
 void WebSocketServer::handle_new_connection(TcpConnPtr &conn)
 {
+    bool websocket_handshake_done = false;
     conn->set_context(HttpRequest());
+    conn->set_context2(websocket_handshake_done);
     if (_newconn_cb)
     {
         _newconn_cb(conn);
@@ -65,9 +67,10 @@ void WebSocketServer::handle_http_request(const HttpRequest &request, HttpRespon
 {
     if (request.get_method() == tinynet::HttpRequest::GET)
     {
-        std::string sec_key = request.get_header("Sec-Websocket-Key");
+        std::string sec_key = request.get_header("Sec-WebSocket-Key");
         if(sec_key.empty())
         {
+            LOG(DEBUG) << "Sec-WebSocket-Key must be present!" << std::endl;
             response.set_status(400, "Bad Request");
         }
         else
@@ -93,16 +96,23 @@ void WebSocketServer::handle_http_request(const HttpRequest &request, HttpRespon
 
 void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size)
 {
-    std::string raw_request(reinterpret_cast<const char*>(data), size);
-    LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
+    std::any &context2 = conn->get_context2();
+    bool &websocket_handshake_done = std::any_cast<bool&>(context2);
 
-    std::any &context = conn->get_context();
-    HttpRequest &request = std::any_cast<HttpRequest&>(context);
-    
-    if (!_handshake_done)
+    if(!websocket_handshake_done)
     {
-        HttpServer::process_http_request(conn, raw_request, request, 
+        std::string raw_request(reinterpret_cast<const char*>(data), size);
+        LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
+        std::any &context = conn->get_context();
+        HttpRequest &request = std::any_cast<HttpRequest&>(context);
+   
+        bool http_complete = HttpServer::process_http_request(conn, raw_request, request, 
             std::bind(&WebSocketServer::handle_http_request, this, std::placeholders::_1, std::placeholders::_2));
+        
+        if (http_complete)
+        {
+            websocket_handshake_done = true;
+        }
     }
     else
     {
