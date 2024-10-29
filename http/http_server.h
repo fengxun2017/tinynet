@@ -13,7 +13,7 @@ namespace tinynet
 
 class HttpServer {
 public:
-    using HttpOnRequestCb = std::function<void (const HttpRequest&,HttpResponse&)>;
+    using HttpOnRequestCb = std::function<void (const HttpRequest&, HttpResponse&)>;
 
     HttpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name);
     ~HttpServer(){}

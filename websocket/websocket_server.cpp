@@ -5,9 +5,13 @@
 #include "http_request.h"
 #include "http_response.h"
 #include "http_server.h"
+#include "SHA1.h"
+#include "base64.h"
 
 namespace tinynet
 {
+
+const std::string WebSocketServer::MAGIC_KEY = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 WebSocketServer::WebSocketServer(EventLoop *event_loop, const std::string& ip, int port, std::string name)
 :_name(name), 
@@ -40,7 +44,35 @@ void WebSocketServer::handle_disconnected(TcpConnPtr &conn)
     LOG(DEBUG) << _name << " disconnected:" << conn->get_name() << std::endl;
 }
 
-
+void WebSocketServer::handle_http_request(const HttpRequest &request, HttpResponse &response)
+{
+    if (request.get_method() == tinynet::HttpRequest::GET)
+    {
+        std::string sec_key = request.get_header("Sec-Websocket-Key");
+        if(sec_key.empty())
+        {
+            response.set_status(400, "Bad Request");
+        }
+        else
+        {
+            uint8_t hash[20];
+            sec_key.append(MAGIC_KEY);
+            secure::SHA1::compute_sha1(sec_key.data(), sec_key.size(), hash, sizeof(hash));
+            char base64[32] = {0};
+            to_base64(hash, 20, base64, sizeof(base64));
+            
+            response.set_status(101, "Switching Protocols");
+            response.add_header("Upgrade", "websocket");
+            response.add_header("Connection", "Upgrade");
+        }
+    }
+    else
+    {
+        response.set_status(501, "Not Implemented");
+        response.set_body("Unsupported method");
+        response.set_need_close(true);
+    }
+}
 
 void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size)
 {
@@ -53,7 +85,8 @@ void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size
     std::any &context = conn->get_context();
     HttpRequest &request = std::any_cast<HttpRequest&>(context);
  
-    
+    HttpServer::process_http_request(conn, raw_request, request, _onrequest_cb);
+
 }
 
 }  // namespace tinynet

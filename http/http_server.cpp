@@ -46,6 +46,7 @@ void HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request
                 if (onrequest_cb)
                 {
                     onrequest_cb(request, response);
+                    close = response.get_need_close();
                 }
                 else
                 {

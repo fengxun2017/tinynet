@@ -5,6 +5,8 @@
 #include <functional>
 #include "tcp_server.h"
 #include "event_loop.h"
+#include "http_request.h"
+#include "http_response.h"
 
 namespace tinynet
 {
@@ -38,11 +40,14 @@ public:
 
 
 private:
+    static const std::string MAGIC_KEY;
     void handle_new_connection(TcpConnPtr &conn);
 
     void handle_disconnected(TcpConnPtr &conn);
 
     void handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size);
+
+    void handle_http_request(const HttpRequest &request, HttpResponse &response);
 
     WSSrvNewConnCb _newconn_cb = nullptr;
     WSSrvDisconnectedCb _disconnected_cb = nullptr;
