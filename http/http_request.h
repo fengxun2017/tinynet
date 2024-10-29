@@ -15,7 +15,7 @@ public:
 
     bool parse(const std::string& raw_request);
     HttpVersion get_version(void);
-    std::string get_header(const std::string &key);
+    std::string get_header(const std::string &key) const;
     HttpMethod get_method(void) const  {return _method;}
     std::string get_url(void) const {return _URL;}
     std::string get_body(void) const {return _body;}

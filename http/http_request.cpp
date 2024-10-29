@@ -174,7 +174,7 @@ bool HttpRequest::parse_request_line(const std::string& raw_request)
     return true;
 }
 
-std::string HttpRequest::get_header(const std::string &key)
+std::string HttpRequest::get_header(const std::string &key) const
 {
     std::string result;
     auto item = _headers.find(key);

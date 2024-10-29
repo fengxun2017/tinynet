@@ -10,7 +10,7 @@ SHA1::SHA1()
     reset();
 }
 
-bool compute_sha1(const uint8_t* in, uint64_t in_len, uint8_t* out, size_t out_size)
+bool SHA1::compute_sha1(const uint8_t* in, size_t in_len, uint8_t* out, size_t out_size)
 {
     if (out_size < SHA1::SHA1_OUT_SIZE)
     {

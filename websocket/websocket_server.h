@@ -45,6 +45,8 @@ private:
 
     void handle_disconnected(TcpConnPtr &conn);
 
+    void handle_write_complete(TcpConnPtr &conn);
+
     void handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size);
 
     void handle_http_request(const HttpRequest &request, HttpResponse &response);

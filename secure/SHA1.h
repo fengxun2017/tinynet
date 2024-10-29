@@ -14,7 +14,7 @@ public:
 
     void final(uint8_t* hash);
 
-    static void compute_sha1(const uint8_t* in, uint64_t in_len, uint8_t* out, size_t out_size);
+    static bool compute_sha1(const uint8_t* in, size_t in_len, uint8_t* out, size_t out_size);
     static const size_t SHA1_OUT_SIZE;
 
 private:

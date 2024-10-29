@@ -23,7 +23,12 @@ TcpServer::~TcpServer(void)
 
 bool TcpServer::start(void)
 {
-    return _acceptor.start();
+    bool ret = false;
+
+    ret = _acceptor.start();
+    LOG(INFO) << _name << " start!" << std::endl;
+
+    return ret;
 }
 
 void TcpServer::stop(void)

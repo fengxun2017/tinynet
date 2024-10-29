@@ -1,5 +1,7 @@
 #include "base64.h"
 
+namespace secure
+{
 static const char base64_chars[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
@@ -52,4 +54,6 @@ void to_base64(uint8_t *in, uint32_t in_len, char *out, uint32_t out_buffer_size
     if (j < out_buffer_size) {
         out[j] = '\0';
     }
+}
+
 }
