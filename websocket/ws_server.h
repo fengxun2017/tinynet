@@ -3,11 +3,12 @@
 
 #include <string>
 #include <functional>
+#include <tuple>
 #include "tcp_server.h"
 #include "event_loop.h"
 #include "http_request.h"
 #include "http_response.h"
-
+#include "ws_connection.h"
 namespace tinynet
 {
 
@@ -58,6 +59,7 @@ private:
     std::string _name;
     TcpServer _tcp_server;
     bool _handshake_done;
+    std::unordered_map<int, std::tuple<bool, WebSocketConnection>> _ws_clients;
 };
 
 } // tinynet

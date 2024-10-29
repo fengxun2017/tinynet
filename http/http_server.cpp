@@ -84,6 +84,7 @@ bool HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request
 
     if (close)
     {
+        LOG(DEBUG) << _name << " disable_conn" << std::endl;
         conn->disable_conn();
     }
 

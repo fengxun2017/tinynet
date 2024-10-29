@@ -43,23 +43,48 @@ void WebSocketServer::handle_write_complete(TcpConnPtr &conn)
 
 void WebSocketServer::handle_new_connection(TcpConnPtr &conn)
 {
-    bool websocket_handshake_done = false;
+    // bool websocket_handshake_done = false;
     conn->set_context(HttpRequest());
-    conn->set_context2(websocket_handshake_done);
+    // conn->set_context2(websocket_handshake_done);
     if (_newconn_cb)
     {
         _newconn_cb(conn);
+    }
+#ifdef TINYNET_DEBUG
+    auto item = _ws_clients.find(conn->get_fd());
+    if (item != _ws_clients.end())
+    {
+        LOG(ERROR) << "The same file descriptor already exists! something wrong" << std::endl; 
+    }
+    else
+#endif
+    {
+        // LOG(INFO) << "The connection from " << new_conn->get_client_ip() 
+        //     << ":" << new_conn->get_client_port() << " is established" 
+        //     << std::endl;
+        _ws_clients.emplace(std::make_pair(conn->get_fd(), {false, conn}));
     }
     LOG(DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
 }
 
 void WebSocketServer::handle_disconnected(TcpConnPtr &conn)
 {
-    _handshake_done = false;
-    if (_disconnected_cb)
+    auto item = _ws_clients.find(conn->get_fd());
+    if (item != _ws_clients.end())
     {
-        _disconnected_cb(conn);
+        if (_disconnected_cb) {
+            _disconnected_cb(conn);
+        }
+        // The release should be at the end
+        (void)_ws_clients.erase(item);
     }
+    else
+    {
+        LOG(ERROR) << "error in WebSocketServer::handle_disconnected, "
+                << "the client was not found from the client collection " << std::endl;
+    }
+
+    _handshake_done = false;
     LOG(DEBUG) << _name << " disconnected:" << conn->get_name() << std::endl;
 }
 
@@ -96,35 +121,45 @@ void WebSocketServer::handle_http_request(const HttpRequest &request, HttpRespon
 
 void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size)
 {
-    std::any &context2 = conn->get_context2();
-    bool &websocket_handshake_done = std::any_cast<bool&>(context2);
 
-    if(!websocket_handshake_done)
-    {
-        std::string raw_request(reinterpret_cast<const char*>(data), size);
-        LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
-        std::any &context = conn->get_context();
-        HttpRequest &request = std::any_cast<HttpRequest&>(context);
+    auto client = _ws_clients.find(conn->get_fd());
+    if (client != _ws_clients.end())
 
-        bool http_complete = HttpServer::process_http_request(conn, raw_request, request, 
-            std::bind(&WebSocketServer::handle_http_request, this, std::placeholders::_1, std::placeholders::_2));
-        
-        if (http_complete)
+        bool &websocket_handshake_done = std::get<0>(client->second);
+        // std::any &context2 = conn->get_context2();
+        // bool &websocket_handshake_done = std::any_cast<bool&>(context2);
+        LOG(DEBUG) << "websocket_handshake_done:" << websocket_handshake_done << std::endl; 
+        if(!websocket_handshake_done)
         {
-            websocket_handshake_done = true;
+            std::string raw_request(reinterpret_cast<const char*>(data), size);
+            LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
+            std::any &context = conn->get_context();
+            HttpRequest &request = std::any_cast<HttpRequest&>(context);
+
+            bool http_complete = HttpServer::process_http_request(conn, raw_request, request, 
+                std::bind(&WebSocketServer::handle_http_request, this, std::placeholders::_1, std::placeholders::_2));
+            
+            if (http_complete)
+            {
+                websocket_handshake_done = true;
+            }
+        }
+        else
+        {
+            if(_on_message_cb)
+            {
+                _on_message_cb(conn, data, size);
+            }
+            else
+            {
+                LOG(INFO) << _name << " The message processing callback function is not configured, and the disconnection is performed." << std::endl;
+                conn->disable_conn();
+            }
         }
     }
     else
     {
-        if(_on_message_cb)
-        {
-            _on_message_cb(conn, data, size);
-        }
-        else
-        {
-            LOG(INFO) << _name << " The message processing callback function is not configured, and the disconnection is performed." << std::endl;
-            conn->disable_conn();
-        }
+        LOG(ERROR) << "something wrong, client not in _ws_clients" << std::endl;
     }
 }
 
