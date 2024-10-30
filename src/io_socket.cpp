@@ -11,6 +11,7 @@ namespace tinynet
 
 IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
 {
+    int opt = 1;
     _protocol = protocol;
     _sockfd = -1;
 
@@ -21,6 +22,7 @@ IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
     else if (UDP == _protocol) {
         _sockfd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
     }
+    setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     if (_sockfd < 0) {
         LOG(ERROR) << "socket create failed, error info:" << error_to_str(errno) << std::endl;

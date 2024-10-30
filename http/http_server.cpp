@@ -35,6 +35,7 @@ void HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request
     {
         if (request.recv_complete())
         {
+            // LOG(DEBUG) << "RECV COMPLETE" << std::endl;
             if (request.get_version() > HttpRequest::HTTP11)
             {
                 LOG(INFO) << ": HTTP Version Not Supported" << std::endl; 
@@ -57,6 +58,7 @@ void HttpServer::process_http_request(TcpConnPtr &conn, std::string &raw_request
                 }
             }
             std::string connection = request.get_header("Connection");
+            // LOG(DEBUG) << "Connection:" << connection << std::endl;
             if (request.get_version() == HttpRequest::HTTP10 && connection != "Keep-Alive")
             {
                 LOG(DEBUG) << ": http1.0 and not set keep-alive" << std::endl;

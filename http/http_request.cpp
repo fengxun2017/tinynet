@@ -43,6 +43,7 @@ bool HttpRequest::parse(const std::string &raw_request) {
 
     if (WAIT_REQUEST_LINE == _state)
     {
+        // LOG(DEBUG) << "IN WAIT_REQUEST_LINE" << std::endl;
         // The complete request line is received
         if (_request_buffer.find(CRLF) != std::string::npos)
         {
@@ -59,13 +60,25 @@ bool HttpRequest::parse(const std::string &raw_request) {
     }
 
     if (WAIT_HEADERS == _state)
-    {   // All headers are received
+    {   
+        // LOG(DEBUG) << "IN WAIT_HEADERS" << std::endl;
+
+        // All headers are received
         if (_request_buffer.find(CRLFCRLF) != std::string::npos)
         {
+            // LOG(DEBUG) << "IN parse_headers" << std::endl;
             if (parse_headers(_request_buffer))
             {
+                /* FIXME: "Transfer-Encoding": chunked also needs to be resolved*/
                 std::string len = get_header("Content-Length");
-                _body_len = std::stoul(len);
+                if(!len.empty())
+                {
+                    _body_len = std::stoul(len);
+                }
+                else
+                {
+                    _body_len = 0;
+                }
                 _state = WAIT_BODY;
             }
             else
@@ -78,8 +91,9 @@ bool HttpRequest::parse(const std::string &raw_request) {
     
     if (WAIT_BODY == _state)
     {
-        std::string len = get_header("Content-Length");
-        if (!len.empty())
+        // LOG(DEBUG) << "IN WAIT_BODY" << std::endl;
+
+        if (_body_len > 0)
         {
             parse_body(_request_buffer);
         }
@@ -87,6 +101,8 @@ bool HttpRequest::parse(const std::string &raw_request) {
         {
             // There is no request body part
             _state = RECV_COMPLETE;
+            // LOG(DEBUG) << "IN RECV_COMPLETE" << std::endl;
+
         }
     }
 
@@ -102,6 +118,8 @@ bool HttpRequest::parse_body(const std::string& raw_request)
     {
         _body = std::move(raw_request.substr(body_start, raw_request.size()-body_start));
         _state = RECV_COMPLETE;
+        // LOG(DEBUG) << "IN RECV_COMPLETE" << std::endl;
+
     }
 
     return true;
@@ -215,7 +233,8 @@ HttpRequest::HttpVersion HttpRequest::get_version(void)
 void HttpRequest::reset(void)
 {
     _request_buffer.clear();
-    _state = WAIT_HEADERS;
+    _headers.clear();
+    _state = WAIT_REQUEST_LINE;
 }
 
 } // tinynet
