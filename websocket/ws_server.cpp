@@ -105,7 +105,7 @@ void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size
         LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
         std::any &context = conn->get_context();
         HttpRequest &request = std::any_cast<HttpRequest&>(context);
-   
+
         bool http_complete = HttpServer::process_http_request(conn, raw_request, request, 
             std::bind(&WebSocketServer::handle_http_request, this, std::placeholders::_1, std::placeholders::_2));
         

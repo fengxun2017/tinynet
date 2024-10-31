@@ -17,6 +17,7 @@ target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/secure)
 
 # 链接 loglib 库
 target_link_libraries(netlib PUBLIC loglib)
+target_compile_definitions(netlib PRIVATE TINYNET_DEBUG)
 
 # 设置库输出目录
 set_target_properties(netlib PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)

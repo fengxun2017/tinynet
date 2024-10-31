@@ -210,6 +210,7 @@ std::string HttpRequest::dump_heads(void) const
     for (const auto &pair : _headers) {
         oss << " " << pair.first << ":" << pair.second << ",";
     }
+    oss << " }";
     return oss.str();
 }
 
