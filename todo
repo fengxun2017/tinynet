@@ -8,3 +8,4 @@ server端程序被kill掉了，而client没有关闭连接（该连接对应的s
     server端被kill掉，服务端口没有被监听。client的写操作，服务端会回复RST.
 
 使用 gcc -fsanitize=leak
+FIXME:梳理所有内部指针使用，是否进行非空判断。

@@ -8,13 +8,144 @@
 namespace tinynet
 {
 
+
+WebSocketConnection::WebSocketConnection(TcpConnPtr conn)
+    :_tcp_conn(conn),
+    _frame_state(WAIT_FIN_AND_OPCODE)
+{
+    _payload_buffer.reserve(100);
+}
+
+void WebSocketConnection::reset_recv_state(void)
+{
+    _frame_state = WAIT_FIN_AND_OPCODE;
+    _payload_buffer.clear();
+    _recv_count = 0;
+}
+
+bool is_recv_complete(void)
+{
+    ret = false;
+    if (RECV_COMPLETE == _frame_state)
+    {
+        ret = true;
+    }
+
+    return ret;
+}
+
 void WebSocketConnection::handle_recv_data(uint8_t *data, size_t len)
 {
-    /* Messages from the client must be masked, so your server must expect this to be 1. */
+    process_input(data, len);
+    if (is_recv_complete())
+    {
+        /* Messages from the client must be masked, so your server must expect this to be 1. */
+        if (!_header.mask)
+        {
+            LOG(ERROR) << "Messages from the client must be masked." << std::endl;
+            websocket_disconn(POLICY_VIOLATION, "There are no mask markers");
+            reset_recv_state();
+            return false;
+        }
+    }
 }
 
 
-void WebSocketConnection::write_data(const uint8_t* data, size_t size, WebSocket::Opcode opcode = WebSocket::OPCODE_TEXT, bool fin = true)
+void WebSocketConnection::process_input(uint8_t *data, size_t len)
+{
+    size_t i = 0;
+    bool ret = true;
+
+    if (NULL != data)
+    {
+        while (i++ < len)
+        {
+            switch (_frame_state)
+            {
+                case WAIT_FIN_AND_OPCODE:
+                    _header.fin = data[i] & 0x80;
+                    _header.opcode = data[i] & 0x0F;
+                    _frame_state = WAIT_MASK_AND_LEN;
+                break;
+
+                case WAIT_MASK_AND_LEN:
+                    _header.mask = data[i]&0x80;
+                    uint8_t len = data[i]&0x7F;
+
+
+
+                    _recv_count = 0;
+                    if (len <= 125)
+                    {
+                        _header.payload_length = len;
+                        _frame_state = WAIT_MASK_KEY;
+                    }
+                    else
+                    {
+                        _frame_state = WAIT_EXT_LEN;
+                        _header.payload_length = 0;
+                        if (len == 126)
+                        {
+                            _ext_payload_len = 2;
+
+                        }
+                        else if (len == 127)
+                        {
+                            _ext_payload_len = 8;
+                        }
+                    }
+  
+                break;
+
+                case WAIT_EXT_LEN:
+                    _recv_count++;
+                    _header.payload_length = (_header.payload_length << 8) + data[i];
+                    if (_recv_count >= _ext_payload_len)
+                    {
+                        _frame_state = WAIT_MASK_KEY;
+                        _recv_count = 0;
+                    }
+                break;
+
+                case WAIT_MASK_KEY:
+                    _header.masking_key[_recv_count++] = data[i];
+                    if (_recv_count >= 4)
+                    {
+                        _frame_state = WAIT_PAYLOAD;
+                        _recv_count = 0;
+                    }
+                break;
+
+                case WAIT_PAYLOAD:
+                    _payload_buffer[_recv_count] = data[i] ^ _header.masking_key[_recv_count & 3];
+                    _recv_count++;
+                    if (_recv_count >= _header.payload_length)
+                    {
+                        _frame_state = RECV_COMPLETE;
+                    }
+                break;
+
+                case RECV_COMPLETE:
+                    LOG(ERROR) << "The data has been fully received"
+                break;
+
+                default:
+                    LOG(ERROR) << "websocket frame recv state error" << std::endl;
+                    reset_recv_state();
+                break;
+            }
+        }
+    }
+    else
+    {
+        LOG(ERROR) << "data is NULL in WebSocketConnection::handle_recv_data." << std::endl;
+    }
+
+    return 
+}
+
+
+void WebSocketConnection::write_data(WebSocket::OpCode opcode = WebSocket::OPCODE_TEXT, const uint8_t* data, size_t size, bool fin = true)
 {
     std::vector<uint8_t> frame;
     /* The frame header information can be up to 14 bytes */
@@ -25,6 +156,7 @@ void WebSocketConnection::write_data(const uint8_t* data, size_t size, WebSocket
         LOG(ERROR) << "opcode not support" << std::endl;
         return ;
     }
+    /* Fragmentation is only available on opcodes 0x0 to 0x2 */
     if (opcode > WebSocket::OPCODE_BINARY)
     {
         fin = true;

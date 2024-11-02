@@ -7,7 +7,7 @@ namespace tinynet
 class WebSocket
 {
 public:
-enum Opcode
+enum OpCode
 {
     OPCODE_CONT = 0x0,
     OPCODE_TEXT = 0x1,
@@ -16,6 +16,21 @@ enum Opcode
     OPCODE_PING = 0x9,
     OPCODE_PONG = 0xA
 };
+
+enum StateCode
+{
+    NORMAL_COSE = 1000,
+    GOING_AWAY = 1001,
+    PROTOCOL_ERROR = 1002,
+    UNSUPPORTED_DATA = 1003,
+    NO_STATUS_RECEIVED = 1005,
+    ABNORMAL_CLOSURE = 1006,
+    INVALID_FRAME = 1007,
+    POLICY_VIOLATION = 1008,
+    MESSAGE_TOO_BIG = 1009,
+    MANDATORY_EXTENSION = 1010,
+    INTERNAL_SERVER_ERROR = 1011
+}
 
 };
 

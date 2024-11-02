@@ -124,7 +124,7 @@ void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size
 
     auto client = _ws_clients.find(conn->get_fd());
     if (client != _ws_clients.end())
-
+    {
         bool &websocket_handshake_done = std::get<0>(client->second);
         // std::any &context2 = conn->get_context2();
         // bool &websocket_handshake_done = std::any_cast<bool&>(context2);
