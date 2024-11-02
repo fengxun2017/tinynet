@@ -15,8 +15,9 @@ public:
     ~WebSocketConnection(){};
 
     void write_data(WebSocket::OpCode opcode = WebSocket::OPCODE_TEXT, const uint8_t* data, size_t size, bool fin = true);
-    bool handle_recv_data(uint8_t *data, size_t len);
+    void handle_recv_data(uint8_t *data, size_t len);
     void websocket_disconn(uint16_t statcode, std::string reason);
+
 private:
     enum WebSocketFrameRecvState
     {

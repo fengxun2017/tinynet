@@ -70,6 +70,7 @@ void TcpServer::handle_new_connection(TcpConnPtr new_conn)
                                         std::placeholders::_2,
                                         std::placeholders::_3));
             new_conn->set_write_complete_cb(std::bind(&TcpServer::handle_write_complete, this, std::placeholders::_1));
+            new_conn->enable_read();
 
             if (_newconn_cb) 
             {
