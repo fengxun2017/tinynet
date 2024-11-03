@@ -50,6 +50,7 @@ void WebSocketServer::handle_write_complete(TcpConnPtr &conn)
 
 void WebSocketServer::handle_new_connection(TcpConnPtr &conn)
 {
+    LOG(DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
     // bool websocket_handshake_done = false;
     conn->set_context(HttpRequest());
     // conn->set_context2(websocket_handshake_done);
@@ -73,7 +74,6 @@ void WebSocketServer::handle_new_connection(TcpConnPtr &conn)
             _newconn_cb(ws_conn);
         }
     }
-    LOG(DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
 }
 
 void WebSocketServer::handle_disconnected(TcpConnPtr &conn)
