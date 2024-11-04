@@ -67,7 +67,7 @@ void TcpAcceptor::accept_connection(void)
     if (check_fd(client_sockfd))
     {
 #ifdef TINYNET_DEBUG
-     check_fd_nonblock(client_sockfd)
+     check_fd_nonblock(client_sockfd);
 #endif
         // if (0 == getpeername(client_sockfd, (struct sockaddr*)&client_addr, &client_len))
         // {

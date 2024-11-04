@@ -30,7 +30,7 @@ enum StateCode
     MESSAGE_TOO_BIG = 1009,
     MANDATORY_EXTENSION = 1010,
     INTERNAL_SERVER_ERROR = 1011
-}
+};
 
 };
 

@@ -13,6 +13,8 @@ static inline bool check_fd(int fd)
 
 const char * error_to_str (int errnum);
 
+void check_fd_nonblock(int fd);
+
 }  // namespace tinynet
 
 #endif  // _TINYNET_UTIL_H_

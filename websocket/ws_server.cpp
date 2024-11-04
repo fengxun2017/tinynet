@@ -1,7 +1,9 @@
+#include <memory>
 #include <string>
 #include <utility>
 #include "logging.h"
-#include "websocket_server.h"
+#include "ws_connection.h"
+#include "ws_server.h"
 #include "http_request.h"
 #include "http_response.h"
 #include "http_server.h"
@@ -35,9 +37,14 @@ void WebSocketServer::start(void)
 
 void WebSocketServer::handle_write_complete(TcpConnPtr &conn)
 {
-    if (_write_complete_cb)
+    auto  item = _ws_clients.find(conn->get_fd());
+    if (item != _ws_clients.end())
     {
-        _write_complete_cb(conn);
+        auto &ws_conn = std::get<1>(item->second);
+        if (_write_complete_cb)
+        {
+            _write_complete_cb(ws_conn);
+        }
     }
 }
 
@@ -46,10 +53,7 @@ void WebSocketServer::handle_new_connection(TcpConnPtr &conn)
     // bool websocket_handshake_done = false;
     conn->set_context(HttpRequest());
     // conn->set_context2(websocket_handshake_done);
-    if (_newconn_cb)
-    {
-        _newconn_cb(conn);
-    }
+
 #ifdef TINYNET_DEBUG
     auto item = _ws_clients.find(conn->get_fd());
     if (item != _ws_clients.end())
@@ -62,7 +66,12 @@ void WebSocketServer::handle_new_connection(TcpConnPtr &conn)
         // LOG(INFO) << "The connection from " << new_conn->get_client_ip() 
         //     << ":" << new_conn->get_client_port() << " is established" 
         //     << std::endl;
-        _ws_clients.emplace(std::make_pair(conn->get_fd(), {false, conn}));
+        WsConnPtr ws_conn = std::make_shared<WebSocketConnection>(conn, conn->get_name());
+        _ws_clients.emplace(std::make_pair(conn->get_fd(), std::tuple<bool, WsConnPtr>(false, ws_conn)));
+        if (_newconn_cb)
+        {
+            _newconn_cb(ws_conn);
+        }
     }
     LOG(DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
 }
@@ -72,8 +81,9 @@ void WebSocketServer::handle_disconnected(TcpConnPtr &conn)
     auto item = _ws_clients.find(conn->get_fd());
     if (item != _ws_clients.end())
     {
+        auto &ws_conn = std::get<1>(item->second);
         if (_disconnected_cb) {
-            _disconnected_cb(conn);
+            _disconnected_cb(ws_conn);
         }
         // The release should be at the end
         (void)_ws_clients.erase(item);
@@ -148,7 +158,8 @@ void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size
         {
             if(_on_message_cb)
             {
-                _on_message_cb(conn, data, size);
+                auto ws_conn = std::get<1>(client->second);
+                ws_conn->handle_recv_data(data, size, _on_message_cb);
             }
             else
             {

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstring>
 #include <endian.h>
+#include <functional>
 #include "ws_connection.h"
 #include "logging.h"
 
@@ -9,9 +10,10 @@ namespace tinynet
 {
 
 
-WebSocketConnection::WebSocketConnection(TcpConnPtr conn)
+WebSocketConnection::WebSocketConnection(TcpConnPtr conn, std::string name)
     :_tcp_conn(conn),
-    _frame_state(WAIT_FIN_AND_OPCODE)
+    _frame_state(WAIT_FIN_AND_OPCODE),
+    _name(name)
 {
     _payload_buffer.reserve(100);
 }
@@ -23,7 +25,7 @@ void WebSocketConnection::reset_recv_state(void)
     _recv_count = 0;
 }
 
-bool is_recv_complete(void)
+bool WebSocketConnection::is_recv_complete(void)
 {
     bool ret = false;
     if (RECV_COMPLETE == _frame_state)
@@ -34,7 +36,7 @@ bool is_recv_complete(void)
     return ret;
 }
 
-void WebSocketConnection::handle_recv_data(uint8_t *data, size_t len)
+void WebSocketConnection::handle_recv_data(const uint8_t *data, size_t len, std::function<void(WsConnPtr &, const uint8_t *data, size_t size)> user_cb)
 {
     process_input(data, len);
     if (is_recv_complete())
@@ -50,15 +52,22 @@ void WebSocketConnection::handle_recv_data(uint8_t *data, size_t len)
         {
             if (WebSocket::OPCODE_PING == _header.opcode)
             {
-                write_data(WebSocket::OPCODE_PONG, (uint8_t *)_payload_buffer.data(), _payload_buffer.size());
+                LOG(INNER_DEBUG) << "recv PING, resp PONG" << std::endl;
+                write_data( (uint8_t *)_payload_buffer.data(), _payload_buffer.size(), WebSocket::OPCODE_PONG);
             }
             else if (WebSocket::OPCODE_PONG == _header.opcode)
             {
+                LOG(INNER_DEBUG) << "recv OPCODE_PONG" << std::endl;
                 // ignore
+            }
+            else if(WebSocket::OPCODE_CONT == _header.opcode)
+            {
+                LOG(ERROR) << "There shouldn't be this opcode here" << std::endl;
             }
             else
             {
-                
+                auto ws_conn = shared_from_this();
+                user_cb(ws_conn, static_cast<uint8_t *>(_payload_buffer.data()), _payload_buffer.size());
             }
         }
     }
@@ -68,36 +77,37 @@ void WebSocketConnection::websocket_disconn(uint16_t stat_code, std::string reas
 {
     std::vector<uint8_t> payload;
     
-    payload.push_back((statecode>>8)&0xff);
-    payload.push_back(statecode&0xff);
+    payload.push_back((stat_code>>8)&0xff);
+    payload.push_back(stat_code&0xff);
     payload.insert(payload.end(), reason.begin(), reason.end());
-    write_data(WebSocket::OPCODE_CLOSE, (uint8_t *)payload.data(), payload.size());
+    write_data((uint8_t *)payload.data(), payload.size(), WebSocket::OPCODE_CLOSE);
     _tcp_conn->disable_conn();
 }
 
 
-void WebSocketConnection::process_input(uint8_t *data, size_t len)
+void WebSocketConnection::process_input(const uint8_t *data, size_t size)
 {
     size_t i = 0;
     bool ret = true;
+    uint8_t len;
 
     if (NULL != data)
     {
-        while (i++ < len)
+        while (i++ < size)
         {
             switch (_frame_state)
             {
                 case WAIT_FIN_AND_OPCODE:
-                    LOG(INNER_DEBUG) << "websocket:WAIT_FIN_AND_OPCODE" << std::endl
+                    LOG(INNER_DEBUG) << "websocket:WAIT_FIN_AND_OPCODE" << std::endl;
                     _header.fin = data[i] & 0x80;
                     _header.opcode = data[i] & 0x0F;
                     _frame_state = WAIT_MASK_AND_LEN;
                 break;
 
                 case WAIT_MASK_AND_LEN:
-                    LOG(INNER_DEBUG) << "websocket:WAIT_MASK_AND_LEN" << std::endl
+                    LOG(INNER_DEBUG) << "websocket:WAIT_MASK_AND_LEN" << std::endl;
                     _header.mask = data[i]&0x80;
-                    uint8_t len = data[i]&0x7F;
+                    len = data[i]&0x7F;
 
                     _recv_count = 0;
                     if (len <= 125)
@@ -123,7 +133,7 @@ void WebSocketConnection::process_input(uint8_t *data, size_t len)
                 break;
 
                 case WAIT_EXT_LEN:
-                    LOG(INNER_DEBUG) << "websocket:WAIT_EXT_LEN" << std::endl
+                    LOG(INNER_DEBUG) << "websocket:WAIT_EXT_LEN" << std::endl;
                     _recv_count++;
                     _header.payload_length = (_header.payload_length << 8) + data[i];
                     if (_recv_count >= _ext_payload_len)
@@ -134,7 +144,7 @@ void WebSocketConnection::process_input(uint8_t *data, size_t len)
                 break;
 
                 case WAIT_MASK_KEY:
-                    LOG(INNER_DEBUG) << "websocket:WAIT_MASK_KEY" << std::endl
+                    LOG(INNER_DEBUG) << "websocket:WAIT_MASK_KEY" << std::endl;
                     _header.masking_key[_recv_count++] = data[i];
                     if (_recv_count >= 4)
                     {
@@ -144,7 +154,7 @@ void WebSocketConnection::process_input(uint8_t *data, size_t len)
                 break;
 
                 case WAIT_PAYLOAD:
-                    LOG(INNER_DEBUG) << "websocket:WAIT_PAYLOAD" << std::endl
+                    LOG(INNER_DEBUG) << "websocket:WAIT_PAYLOAD" << std::endl;
                     _payload_buffer[_recv_count] = data[i] ^ _header.masking_key[_recv_count & 3];
                     _recv_count++;
                     if (_recv_count >= _header.payload_length)
@@ -162,7 +172,7 @@ void WebSocketConnection::process_input(uint8_t *data, size_t len)
                 break;
 
                 case RECV_COMPLETE:
-                    LOG(ERROR) << "The data has been fully received"
+                    LOG(ERROR) << "The data has been fully received" << std::endl;
                 break;
 
                 default:
@@ -174,14 +184,12 @@ void WebSocketConnection::process_input(uint8_t *data, size_t len)
     }
     else
     {
-        LOG(ERROR) << "data is NULL in WebSocketConnection::handle_recv_data." << std::endl;
+        LOG(ERROR) << "data is NULL in WebSocketConnection::process_input." << std::endl;
     }
-
-    return 
 }
 
 
-void WebSocketConnection::write_data(WebSocket::OpCode opcode = WebSocket::OPCODE_TEXT, const uint8_t* data, size_t size, bool fin = true)
+void WebSocketConnection::write_data(const uint8_t* data, size_t size, WebSocket::OpCode opcode, bool fin)
 {
     std::vector<uint8_t> frame;
     /* The frame header information can be up to 14 bytes */

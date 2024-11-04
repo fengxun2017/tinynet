@@ -14,10 +14,10 @@ namespace tinynet
 
 class WebSocketServer {
 public:
-    using WSSrvNewConnCb = std::function<void(TcpConnPtr&)>;
-    using WSSrvDisconnectedCb = std::function<void(TcpConnPtr&)>;
-    using WSSrvOnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
-    using WSSrvWriteCompleteCb = std::function<void(TcpConnPtr&)>;
+    using WSSrvNewConnCb = std::function<void(WsConnPtr&)>;
+    using WSSrvDisconnectedCb = std::function<void(WsConnPtr&)>;
+    using WSSrvOnMessageCb = std::function<void(WsConnPtr&, const uint8_t *data, size_t size)>;
+    using WSSrvWriteCompleteCb = std::function<void(WsConnPtr&)>;
 
     WebSocketServer(EventLoop *event_loop, const std::string& ip, int port, std::string name);
     ~WebSocketServer(){}
@@ -59,7 +59,7 @@ private:
     std::string _name;
     TcpServer _tcp_server;
     bool _handshake_done;
-    std::unordered_map<int, std::tuple<bool, WebSocketConnection>> _ws_clients;
+    std::unordered_map<int, std::tuple<bool, WsConnPtr>> _ws_clients;
 };
 
 } // tinynet
