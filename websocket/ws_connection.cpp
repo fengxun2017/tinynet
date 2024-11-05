@@ -38,39 +38,52 @@ bool WebSocketConnection::is_recv_complete(void)
 
 void WebSocketConnection::handle_recv_data(const uint8_t *data, size_t len, std::function<void(WsConnPtr &, const uint8_t *data, size_t size)> user_cb)
 {
-    process_input(data, len);
-    if (is_recv_complete())
+    if (NULL != data)
     {
-        LOG(INNER_DEBUG) << "recv complete, process websocket payload" << std::endl;
-        /* Messages from the client must be masked, so your server must expect this to be 1. */
-        if (!_header.mask)
+        for (int i = 0; i < len; i++)
         {
-            LOG(ERROR) << "Messages from the client must be masked." << std::endl;
-            websocket_disconn(WebSocket::POLICY_VIOLATION, "There are no mask markers");
-            reset_recv_state();
+            process_input(data[i]);
+            if (is_recv_complete())
+            {
+                LOG(INNER_DEBUG) << "recv complete, process websocket payload" << std::endl;
+                /* Messages from the client must be masked, so your server must expect this to be 1. */
+                if (!_header.mask)
+                {
+                    LOG(ERROR) << "Messages from the client must be masked." << std::endl;
+                    websocket_disconn(WebSocket::POLICY_VIOLATION, "There are no mask markers");
+                    reset_recv_state();
+                }
+                else
+                {
+                    if (WebSocket::OPCODE_PING == _header.opcode)
+                    {
+                        LOG(INNER_DEBUG) << "recv PING, resp PONG" << std::endl;
+                        write_data( (uint8_t *)_payload_buffer.data(), _payload_buffer.size(), WebSocket::OPCODE_PONG);
+                    }
+                    else if (WebSocket::OPCODE_PONG == _header.opcode)
+                    {
+                        LOG(INNER_DEBUG) << "recv OPCODE_PONG" << std::endl;
+                        // ignore
+                    }
+                    else if(WebSocket::OPCODE_CONT == _header.opcode)
+                    {
+                        LOG(ERROR) << "There shouldn't be this opcode here" << std::endl;
+                    }
+                    else
+                    {
+                        auto ws_conn = shared_from_this();
+                        user_cb(ws_conn, static_cast<uint8_t *>(_payload_buffer.data()), _payload_buffer.size());
+
+                        // process done, reset state
+                        reset_recv_state();
+                    }
+                }
+            }
         }
-        else
-        {
-            if (WebSocket::OPCODE_PING == _header.opcode)
-            {
-                LOG(INNER_DEBUG) << "recv PING, resp PONG" << std::endl;
-                write_data( (uint8_t *)_payload_buffer.data(), _payload_buffer.size(), WebSocket::OPCODE_PONG);
-            }
-            else if (WebSocket::OPCODE_PONG == _header.opcode)
-            {
-                LOG(INNER_DEBUG) << "recv OPCODE_PONG" << std::endl;
-                // ignore
-            }
-            else if(WebSocket::OPCODE_CONT == _header.opcode)
-            {
-                LOG(ERROR) << "There shouldn't be this opcode here" << std::endl;
-            }
-            else
-            {
-                auto ws_conn = shared_from_this();
-                user_cb(ws_conn, static_cast<uint8_t *>(_payload_buffer.data()), _payload_buffer.size());
-            }
-        }
+    }
+    else
+    {
+        LOG(ERROR) << "data is NULL in WebSocketConnection::process_input." << std::endl;
     }
 }
 
@@ -86,107 +99,98 @@ void WebSocketConnection::websocket_disconn(uint16_t stat_code, std::string reas
 }
 
 
-void WebSocketConnection::process_input(const uint8_t *data, size_t size)
+void WebSocketConnection::process_input(uint8_t data)
 {
-    bool ret = true;
     uint8_t len;
 
-    if (NULL != data)
+    switch (_frame_state)
     {
-        for (size_t i = 0; i < size; i++)
-        {
-            switch (_frame_state)
+        case WAIT_FIN_AND_OPCODE:
+            // LOG(INNER_DEBUG) << "websocket:WAIT_FIN_AND_OPCODE " << static_cast<int>(data) << std::endl;
+            _header.fin = data & 0x80;
+            _header.opcode = data & 0x0F;
+            _frame_state = WAIT_MASK_AND_LEN;
+        break;
+
+        case WAIT_MASK_AND_LEN:
+            // LOG(INNER_DEBUG) << "websocket:WAIT_MASK_AND_LEN" << static_cast<int>(data) << std::endl;
+            _header.mask = data&0x80;
+            len = data&0x7F;
+
+            _recv_count = 0;
+            if (len <= 125)
             {
-                case WAIT_FIN_AND_OPCODE:
-                    // LOG(INNER_DEBUG) << "websocket:WAIT_FIN_AND_OPCODE " << static_cast<int>(data[i]) << std::endl;
-                    _header.fin = data[i] & 0x80;
-                    _header.opcode = data[i] & 0x0F;
-                    _frame_state = WAIT_MASK_AND_LEN;
-                break;
-
-                case WAIT_MASK_AND_LEN:
-                    // LOG(INNER_DEBUG) << "websocket:WAIT_MASK_AND_LEN" << static_cast<int>(data[i]) << std::endl;
-                    _header.mask = data[i]&0x80;
-                    len = data[i]&0x7F;
-
-                    _recv_count = 0;
-                    if (len <= 125)
-                    {
-                        _header.payload_length = len;
-                        _frame_state = WAIT_MASK_KEY;
-                        // LOG(INNER_DEBUG) << "websocket payload length = " << _header.payload_length << std::endl;
-                    }
-                    else
-                    {
-                        _frame_state = WAIT_EXT_LEN;
-                        _header.payload_length = 0;
-                        if (len == 126)
-                        {
-                            _ext_payload_len = 2;
-
-                        }
-                        else if (len == 127)
-                        {
-                            _ext_payload_len = 8;
-                        }
-                    }
-                break;
-
-                case WAIT_EXT_LEN:
-                    // LOG(INNER_DEBUG) << "websocket:WAIT_EXT_LEN" << static_cast<int>(data[i]) << std::endl;
-                    _recv_count++;
-                    _header.payload_length = (_header.payload_length << 8) + data[i];
-                    if (_recv_count >= _ext_payload_len)
-                    {
-                        _frame_state = WAIT_MASK_KEY;
-                        _recv_count = 0;
-                    }
-                break;
-
-                case WAIT_MASK_KEY:
-                    // LOG(INNER_DEBUG) << "websocket:WAIT_MASK_KEY" << static_cast<int>(data[i]) << std::endl;
-                    _header.masking_key[_recv_count++] = data[i];
-                    if (_recv_count >= 4)
-                    {
-                        _frame_state = WAIT_PAYLOAD;
-                        _recv_count = 0;
-                    }
-                break;
-
-                case WAIT_PAYLOAD:
-                    _payload_buffer.push_back(data[i] ^ _header.masking_key[_recv_count & 3]);
-                    LOG(INNER_DEBUG) << "websocket:WAIT_PAYLOAD: " << _payload_buffer[_recv_count] << std::endl;
-
-                    _recv_count++;
-                    if (_recv_count >= _header.payload_length)
-                    {
-                        if (_header.fin)
-                        {
-                            _frame_state = RECV_COMPLETE;
-                        }
-                        else
-                        {
-                            // only reset state, to receive follow-up packages
-                            _frame_state = WAIT_FIN_AND_OPCODE;
-                        }
-                    }
-                break;
-
-                case RECV_COMPLETE:
-                    LOG(ERROR) << "The data has been fully received" << std::endl;
-                break;
-
-                default:
-                    LOG(ERROR) << "websocket frame recv state error" << std::endl;
-                    reset_recv_state();
-                break;
+                _header.payload_length = len;
+                _frame_state = WAIT_MASK_KEY;
+                // LOG(INNER_DEBUG) << "websocket payload length = " << _header.payload_length << std::endl;
             }
-        }
+            else
+            {
+                _frame_state = WAIT_EXT_LEN;
+                _header.payload_length = 0;
+                if (len == 126)
+                {
+                    _ext_payload_len = 2;
+
+                }
+                else if (len == 127)
+                {
+                    _ext_payload_len = 8;
+                }
+            }
+        break;
+
+        case WAIT_EXT_LEN:
+            // LOG(INNER_DEBUG) << "websocket:WAIT_EXT_LEN" << static_cast<int>(data) << std::endl;
+            _recv_count++;
+            _header.payload_length = (_header.payload_length << 8) + data;
+            if (_recv_count >= _ext_payload_len)
+            {
+                _frame_state = WAIT_MASK_KEY;
+                _recv_count = 0;
+            }
+        break;
+
+        case WAIT_MASK_KEY:
+            // LOG(INNER_DEBUG) << "websocket:WAIT_MASK_KEY" << static_cast<int>(data) << std::endl;
+            _header.masking_key[_recv_count++] = data;
+            if (_recv_count >= 4)
+            {
+                _frame_state = WAIT_PAYLOAD;
+                _recv_count = 0;
+            }
+        break;
+
+        case WAIT_PAYLOAD:
+            _payload_buffer.push_back(data ^ _header.masking_key[_recv_count & 3]);
+            // LOG(INNER_DEBUG) << "websocket:WAIT_PAYLOAD: " << _payload_buffer[_recv_count] << std::endl;
+
+            _recv_count++;
+            if (_recv_count >= _header.payload_length)
+            {
+                if (_header.fin)
+                {
+                    _frame_state = RECV_COMPLETE;
+                }
+                else
+                {
+                    // only reset state, to receive follow-up packages
+                    LOG(INNER_DEBUG) << "only reset state, to receive follow-up packages" << std::endl;
+                    _frame_state = WAIT_FIN_AND_OPCODE;
+                }
+            }
+        break;
+
+        case RECV_COMPLETE:
+            LOG(ERROR) << "The data has been fully received" << std::endl;
+        break;
+
+        default:
+            LOG(ERROR) << "websocket frame recv state error" << std::endl;
+            reset_recv_state();
+        break;
     }
-    else
-    {
-        LOG(ERROR) << "data is NULL in WebSocketConnection::process_input." << std::endl;
-    }
+
 }
 
 

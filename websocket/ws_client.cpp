@@ -13,20 +13,19 @@
 namespace tinynet
 {
 
-const std::string WebSocketServer::MAGIC_KEY = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-WebSocketServer::WebSocketServer(EventLoop *event_loop, const std::string& ip, int port, std::string name)
+WsClient::WsClient(EventLoop *event_loop, std::string name)
 :_name(name), 
- _tcp_server(event_loop, ip, port, name),
+ _tcp_client(event_loop, name),
  _handshake_done(false)
 {
-    _tcp_server.set_newconn_cb(std::bind(&WebSocketServer::handle_new_connection, this, std::placeholders::_1));
-    _tcp_server.set_onmessage_cb(std::bind(&WebSocketServer::handle_message, this,
+    _tcp_client.set_newconn_cb(std::bind(&WsClient::handle_new_connection, this, std::placeholders::_1));
+    _tcp_client.set_onmessage_cb(std::bind(&WsClient::handle_message, this,
                     std::placeholders::_1,
                     std::placeholders::_2,
                     std::placeholders::_3));
-    _tcp_server.set_disconnected_cb(std::bind(&WebSocketServer::handle_disconnected, this, std::placeholders::_1));
-    _tcp_server.set_write_complete_cb(std::bind(&WebSocketServer::handle_write_complete, this, std::placeholders::_1));
+    _tcp_client.set_disconnected_cb(std::bind(&WsClient::handle_disconnected, this, std::placeholders::_1));
+    _tcp_client.set_write_complete_cb(std::bind(&WsClient::handle_write_complete, this, std::placeholders::_1));
 
 }
 

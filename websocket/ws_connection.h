@@ -40,7 +40,7 @@ private:
         uint8_t masking_key[4];
     };
     void reset_recv_state(void);
-    void process_input(const uint8_t *data, size_t size);
+    void process_input(uint8_t data);
     bool is_recv_complete(void);
     void handle_recv_data(const uint8_t *data, size_t len, std::function<void(WsConnPtr&, const uint8_t *data, size_t size)> user_cb);
 

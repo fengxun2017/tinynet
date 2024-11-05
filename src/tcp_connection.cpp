@@ -58,9 +58,7 @@ void TcpConnection::write_data(const void* buffer, size_t length)
         while (left_size)
         {
             bytes_write = ::write(_sockfd, buffer, left_size);
-            LOG(DEBUG) << "[" << _server_ip << ":" << _server_port << "] send to [" 
-                << _client_ip << ":" << _client_port 
-                << "], bytes_write = " << bytes_write << std::endl;
+            LOG(DEBUG) << _name << " send data size = " << bytes_write << std::endl;
 
             if (0 > bytes_write)
             {
