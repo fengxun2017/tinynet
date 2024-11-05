@@ -1,9 +1,10 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <cassert>
 #include "logging.h"
 #include "ws_connection.h"
-#include "ws_server.h"
+#include "ws_client.h"
 #include "http_request.h"
 #include "http_response.h"
 #include "http_server.h"
@@ -29,148 +30,110 @@ WsClient::WsClient(EventLoop *event_loop, std::string name)
 
 }
 
-void WebSocketServer::start(void)
+bool WsClient::connect(std::string server_ip, int server_port)
 {
-    _tcp_server.start();
+    return _tcp_client.connect(server_ip, server_port);
 }
 
-void WebSocketServer::handle_write_complete(TcpConnPtr &conn)
+void WsClient::handle_write_complete(TcpConnPtr &conn)
 {
-    auto  item = _ws_clients.find(conn->get_fd());
-    if (item != _ws_clients.end())
+    if (nullptr != _ws_conn)
     {
-        auto &ws_conn = std::get<1>(item->second);
         if (_write_complete_cb)
         {
             _write_complete_cb(ws_conn);
         }
     }
-}
-
-void WebSocketServer::handle_new_connection(TcpConnPtr &conn)
-{
-    LOG(DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
-    // bool websocket_handshake_done = false;
-    conn->set_context(HttpRequest());
-    // conn->set_context2(websocket_handshake_done);
-
-#ifdef TINYNET_DEBUG
-    auto item = _ws_clients.find(conn->get_fd());
-    if (item != _ws_clients.end())
-    {
-        LOG(ERROR) << "The same file descriptor already exists! something wrong" << std::endl; 
-    }
     else
-#endif
     {
-        // LOG(INFO) << "The connection from " << new_conn->get_client_ip() 
-        //     << ":" << new_conn->get_client_port() << " is established" 
-        //     << std::endl;
-        WsConnPtr ws_conn = std::make_shared<WebSocketConnection>(conn, conn->get_name());
-        _ws_clients.emplace(std::make_pair(conn->get_fd(), std::tuple<bool, WsConnPtr>(false, ws_conn)));
-        if (_newconn_cb)
-        {
-            _newconn_cb(ws_conn);
-        }
+        LOG(ERROR) << "_ws_conn is NULL, something wrong in write_cb" << std::endl;
     }
 }
 
-void WebSocketServer::handle_disconnected(TcpConnPtr &conn)
+void WsClient::handle_new_connection(TcpConnPtr &conn)
+{
+    LOG(INNER_DEBUG) << _name <<": new conn " << conn->get_name() << std::endl;
+    // conn->set_context(HttpResponse());
+
+    if(nullptr != _ws_conn)
+    {
+        LOG(ERROR) << "something wrong, _ws_client is not NULL in new_conn_cb" << std::endl;
+        _ws_conn.reset();
+    }
+    _ws_conn = std::make_shared<WebSocketConnection>(conn, conn->get_name());
+    handshake_req(conn);
+}
+
+void WsClient::handle_disconnected(TcpConnPtr &conn)
 {
     LOG(DEBUG) << _name << " disconnected:" << conn->get_name() << std::endl;
-    auto item = _ws_clients.find(conn->get_fd());
-    if (item != _ws_clients.end())
+    if (nullptr != _ws_conn)
     {
-        auto &ws_conn = std::get<1>(item->second);
-        if (_disconnected_cb) {
-            _disconnected_cb(ws_conn);
+        assert((_ws_conn._tcp_conn)->get_fd() == conn->get_fd());
+        if (_disconnected_cb)
+        {
+            _disconnected_cb(_ws_conn);
         }
-        // The release should be at the end
-        (void)_ws_clients.erase(item);
+        LOG(DEBUG) << "release _ws_conn" << std::endl
+        _ws_conn.reset();
     }
     else
     {
-        LOG(ERROR) << "error in WebSocketServer::handle_disconnected, "
-                << "the client was not found from the client collection " << std::endl;
+        LOG(ERROR) << "_ws_conn is NULL, something wrong!" << std::endl;
     }
 
     _handshake_done = false;
 }
 
-void WebSocketServer::handle_http_request(const HttpRequest &request, HttpResponse &response)
+void WsClient::handshake_req(TcpConnPtr &conn)
 {
-    if (request.get_method() == tinynet::HttpRequest::GET)
+    std::string http_req = "GET / HTTP/1.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n";
+    if (nullptr != conn)
     {
-        std::string sec_key = request.get_header("Sec-WebSocket-Key");
-        if(sec_key.empty())
-        {
-            LOG(DEBUG) << "Sec-WebSocket-Key must be present!" << std::endl;
-            response.set_status(400, "Bad Request");
-        }
-        else
-        {
-            uint8_t hash[20];
-            sec_key.append(MAGIC_KEY);
-            secure::SHA1::compute_sha1((uint8_t *)(sec_key.data()), sec_key.size(), hash, sizeof(hash));
-            char base64[32] = {0};
-            secure::to_base64(hash, 20, base64, sizeof(base64));
-            response.add_header("Sec-Websocket-Accept", base64);
-            response.add_header("Upgrade", "websocket");
-            response.add_header("Connection", "Upgrade");
-            response.set_status(101, "Switching Protocols");
-        }
-    }
-    else
-    {
-        response.set_status(501, "Not Implemented");
-        response.set_body("Unsupported method");
-        response.set_need_close(true);
+        LOG(INFO) << _name << " initiates a handshake request" << std::endl;
+        conn->write_data(http_req.data(), http_req.size());
     }
 }
 
-void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size)
+void WsClient::handle_http_resp(const HttpRequest &request, HttpResponse &response)
+{
+    // FIXME: should check response
+}
+
+void WsClient::handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size)
 {
 
-    auto client = _ws_clients.find(conn->get_fd());
-    if (client != _ws_clients.end())
+    LOG(DEBUG) << "_handshake_done:" << _handshake_done << std::endl; 
+    if(!_handshake_done)
     {
-        bool &websocket_handshake_done = std::get<0>(client->second);
-        // std::any &context2 = conn->get_context2();
-        // bool &websocket_handshake_done = std::any_cast<bool&>(context2);
-        LOG(DEBUG) << "websocket_handshake_done:" << websocket_handshake_done << std::endl; 
-        if(!websocket_handshake_done)
-        {
-            std::string raw_request(reinterpret_cast<const char*>(data), size);
-            LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
-            std::any &context = conn->get_context();
-            HttpRequest &request = std::any_cast<HttpRequest&>(context);
+        std::string raw_resp(reinterpret_cast<const char*>(data), size);
+        LOG(DEBUG) << " http raw response: " << raw_resp << std::endl;
+        
+        // FIXME: should process http response
+        // std::any &context = conn->get_context();
+        // HttpResponse &request = std::any_cast<HttpResponse&>(context);
+        // bool http_complete = HttpClient::process_http_response(conn, raw_resp, request, 
+        //     std::bind(&WebSocketServer::handle_http_resp, this, std::placeholders::_1, std::placeholders::_2));
 
-            bool http_complete = HttpServer::process_http_request(conn, raw_request, request, 
-                std::bind(&WebSocketServer::handle_http_request, this, std::placeholders::_1, std::placeholders::_2));
-            
-            if (http_complete)
-            {
-                websocket_handshake_done = true;
-            }
-        }
-        else
+        if (_newconn_cb)
         {
-            if(_on_message_cb)
-            {
-                auto ws_conn = std::get<1>(client->second);
-                ws_conn->handle_recv_data(data, size, _on_message_cb);
-            }
-            else
-            {
-                LOG(INFO) << _name << " The message processing callback function is not configured, and the disconnection is performed." << std::endl;
-                conn->disable_conn();
-            }
+            _newconn_cb(_ws_conn);
         }
+       _handshake_done = true;
     }
     else
     {
-        LOG(ERROR) << "something wrong, client not in _ws_clients" << std::endl;
+        if(_on_message_cb)
+        {
+            _ws_conn->handle_recv_data(data, size, _on_message_cb);
+        }
+        else
+        {
+            LOG(WARNING) << _name << " The message processing callback function is not configured, and the disconnection is performed." << std::endl;
+            // conn->disable_conn();
+        }
     }
+
 }
 
 }  // namespace tinynet

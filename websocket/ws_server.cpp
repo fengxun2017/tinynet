@@ -141,6 +141,7 @@ void WebSocketServer::handle_message(TcpConnPtr &conn, const uint8_t *data, size
         LOG(DEBUG) << "websocket_handshake_done:" << websocket_handshake_done << std::endl; 
         if(!websocket_handshake_done)
         {
+            // FIXME: maybe some user data in "data, size"
             std::string raw_request(reinterpret_cast<const char*>(data), size);
             LOG(DEBUG) << " http raw request: " << raw_request << std::endl;
             std::any &context = conn->get_context();

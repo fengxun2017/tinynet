@@ -73,6 +73,7 @@ bool HttpRequest::parse(const std::string &raw_request) {
                 std::string len = get_header("Content-Length");
                 if(!len.empty())
                 {
+                    // FIXME: try catch
                     _body_len = std::stoul(len);
                 }
                 else

@@ -21,6 +21,8 @@ public:
     void write_data(const uint8_t* data, size_t size, WebSocket::OpCode opcode = WebSocket::OPCODE_TEXT, bool fin = true);
     void websocket_disconn(uint16_t statcode, std::string reason);
     friend class WebSocketServer;
+    friend class WsClient;
+
 private:
     enum WebSocketFrameRecvState
     {
@@ -43,7 +45,6 @@ private:
     void process_input(uint8_t data);
     bool is_recv_complete(void);
     void handle_recv_data(const uint8_t *data, size_t len, std::function<void(WsConnPtr&, const uint8_t *data, size_t size)> user_cb);
-
     TcpConnPtr _tcp_conn;
     std::vector<uint8_t> _payload_buffer;
     WebSocketFrameRecvState _frame_state;

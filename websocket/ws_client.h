@@ -9,6 +9,7 @@
 #include "http_request.h"
 #include "http_response.h"
 #include "ws_connection.h"
+#include "tcp_client.h"
 namespace tinynet
 {
 
@@ -42,6 +43,7 @@ public:
 
 private:
     static const std::string MAGIC_KEY;
+    void handshake_req(TcpConnPtr &conn);
     void handle_new_connection(TcpConnPtr &conn);
 
     void handle_disconnected(TcpConnPtr &conn);
@@ -50,7 +52,7 @@ private:
 
     void handle_message(TcpConnPtr &conn, const uint8_t *data, size_t size);
 
-    void handle_http_request(const HttpRequest &request, HttpResponse &response);
+    void handle_http_resp(const HttpRequest &request, HttpResponse &response);
 
     WsClientNewConnCb _newconn_cb = nullptr;
     WsClientDisconnectedCb _disconnected_cb = nullptr;
@@ -59,7 +61,7 @@ private:
     std::string _name;
     TcpClient _tcp_client;
     bool _handshake_done;
-    WsConnPtr _ws_clients;
+    WsConnPtr _ws_conn = nullptr;
 };
 
 } // tinynet
