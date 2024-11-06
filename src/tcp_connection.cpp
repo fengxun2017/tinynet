@@ -103,7 +103,7 @@ void TcpConnection::handle_onmessage(void)
     else
     {
         LOG(ERROR) << "read failed in TcpConnection::handle_onmessage, err info:"
-            << error_to_str(errno);
+            << error_to_str(errno) << std::endl;
     }
 }
 

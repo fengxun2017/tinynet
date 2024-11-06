@@ -10,10 +10,11 @@ namespace tinynet
 {
 
 
-WebSocketConnection::WebSocketConnection(TcpConnPtr conn, std::string name)
+WebSocketConnection::WebSocketConnection(TcpConnPtr conn, std::string name, bool used_for_server)
     :_tcp_conn(conn),
     _frame_state(WAIT_FIN_AND_OPCODE),
-    _name(name)
+    _name(name),
+    _used_for_server(used_for_server)
 {
     _payload_buffer.reserve(100);
 }
@@ -47,7 +48,7 @@ void WebSocketConnection::handle_recv_data(const uint8_t *data, size_t len, std:
             {
                 LOG(INNER_DEBUG) << "recv complete, process websocket payload" << std::endl;
                 /* Messages from the client must be masked, so your server must expect this to be 1. */
-                if (!_header.mask)
+                if ((!_header.mask) && (_used_for_server))
                 {
                     LOG(ERROR) << "Messages from the client must be masked." << std::endl;
                     websocket_disconn(WebSocket::POLICY_VIOLATION, "There are no mask markers");
@@ -68,6 +69,11 @@ void WebSocketConnection::handle_recv_data(const uint8_t *data, size_t len, std:
                     else if(WebSocket::OPCODE_CONT == _header.opcode)
                     {
                         LOG(ERROR) << "There shouldn't be this opcode here" << std::endl;
+                    }
+                    else if(WebSocket::OPCODE_CLOSE == _header.opcode)
+                    {
+                        LOG(INFO) << "The peer initiates a disconnection, close code:" <<(_payload_buffer.data()[0]<<8)+_payload_buffer.data()[1]
+                                << " close reason: " << std::string(reinterpret_cast<char *>(&_payload_buffer.data()[2]), _payload_buffer.size()-2) << std::endl;
                     }
                     else
                     {
@@ -102,13 +108,17 @@ void WebSocketConnection::websocket_disconn(uint16_t stat_code, std::string reas
 void WebSocketConnection::process_input(uint8_t data)
 {
     uint8_t len;
-
+    uint8_t opcode;
     switch (_frame_state)
     {
         case WAIT_FIN_AND_OPCODE:
             // LOG(INNER_DEBUG) << "websocket:WAIT_FIN_AND_OPCODE " << static_cast<int>(data) << std::endl;
             _header.fin = data & 0x80;
-            _header.opcode = data & 0x0F;
+            opcode = data & 0x0F;
+            if (WebSocket::OPCODE_CONT != opcode)
+            {
+                _header.opcode = opcode;
+            }
             _frame_state = WAIT_MASK_AND_LEN;
         break;
 
@@ -121,7 +131,14 @@ void WebSocketConnection::process_input(uint8_t data)
             if (len <= 125)
             {
                 _header.payload_length = len;
-                _frame_state = WAIT_MASK_KEY;
+                if (_header.mask)
+                {
+                    _frame_state = WAIT_MASK_KEY;
+                }
+                else
+                {
+                    _frame_state = WAIT_PAYLOAD;
+                }
                 // LOG(INNER_DEBUG) << "websocket payload length = " << _header.payload_length << std::endl;
             }
             else
@@ -146,7 +163,14 @@ void WebSocketConnection::process_input(uint8_t data)
             _header.payload_length = (_header.payload_length << 8) + data;
             if (_recv_count >= _ext_payload_len)
             {
-                _frame_state = WAIT_MASK_KEY;
+                if (_header.mask)
+                {
+                    _frame_state = WAIT_MASK_KEY;
+                }
+                else
+                {
+                    _frame_state = WAIT_PAYLOAD;
+                }
                 _recv_count = 0;
             }
         break;
@@ -162,12 +186,20 @@ void WebSocketConnection::process_input(uint8_t data)
         break;
 
         case WAIT_PAYLOAD:
-            _payload_buffer.push_back(data ^ _header.masking_key[_recv_count & 3]);
+            if (_header.mask)
+            {
+                _payload_buffer.push_back(data ^ _header.masking_key[_recv_count & 3]);
+            }
+            else
+            {
+                _payload_buffer.push_back(data);
+            }
             // LOG(INNER_DEBUG) << "websocket:WAIT_PAYLOAD: " << _payload_buffer[_recv_count] << std::endl;
 
             _recv_count++;
             if (_recv_count >= _header.payload_length)
             {
+                // FIXME: should check fin and opcode
                 if (_header.fin)
                 {
                     _frame_state = RECV_COMPLETE;
@@ -197,6 +229,9 @@ void WebSocketConnection::process_input(uint8_t data)
 void WebSocketConnection::write_data(const uint8_t* data, size_t size, WebSocket::OpCode opcode, bool fin)
 {
     std::vector<uint8_t> frame;
+
+    // With all-zero, you can do without XOR operations
+    uint8_t masking_key[4] =  {0,0,0,0};
     /* The frame header information can be up to 14 bytes */
     frame.reserve(14);
 
@@ -214,21 +249,27 @@ void WebSocketConnection::write_data(const uint8_t* data, size_t size, WebSocket
     uint8_t first_byte = fin ? (0x80 | opcode) : opcode;
     frame.push_back(first_byte);
 
+    uint8_t mask_flag = _used_for_server ? 0x00 : 0x80;
     if (size <= 125)
     {
-        frame.push_back(size);
+        frame.push_back(size|mask_flag);
     }
     else if(size <= 65535)
     {
-        frame.push_back(126);
+        frame.push_back(126|mask_flag);
         uint16_t len = htobe16(size);
         frame.insert(frame.end(), reinterpret_cast<uint8_t*>(&len), reinterpret_cast<uint8_t*>(&len) + 2);
     }
     else
     {
-        frame.push_back(127);
+        frame.push_back(127|mask_flag);
         uint64_t len = htobe64(size);
         frame.insert(frame.end(), reinterpret_cast<uint8_t*>(&len), reinterpret_cast<uint8_t*>(&len) + 8);
+    }
+
+    if (mask_flag)
+    {
+        frame.insert(frame.end(), &masking_key[0], &masking_key[4]);
     }
 
     _tcp_conn->write_data(frame.data(), frame.size());

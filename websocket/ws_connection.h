@@ -14,7 +14,7 @@ class WebSocketConnection : public std::enable_shared_from_this<WebSocketConnect
 {
 public:
 
-    WebSocketConnection(TcpConnPtr conn, std::string name);
+    WebSocketConnection(TcpConnPtr conn, std::string name, bool used_for_server = true);
     ~WebSocketConnection(){};
 
     std::string get_name(void) {return _name;}
@@ -53,7 +53,7 @@ private:
     WebSocketFrameHeader _header;
     bool _packet_recv_complate;
     std::string _name;
-
+    bool _used_for_server;
 };
 
 } // tinynet

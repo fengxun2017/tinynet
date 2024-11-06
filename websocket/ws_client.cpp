@@ -39,9 +39,10 @@ void WsClient::handle_write_complete(TcpConnPtr &conn)
 {
     if (nullptr != _ws_conn)
     {
+        assert((_ws_conn->_tcp_conn)->get_fd() == conn->get_fd());
         if (_write_complete_cb)
         {
-            _write_complete_cb(ws_conn);
+            _write_complete_cb(_ws_conn);
         }
     }
     else
@@ -60,7 +61,7 @@ void WsClient::handle_new_connection(TcpConnPtr &conn)
         LOG(ERROR) << "something wrong, _ws_client is not NULL in new_conn_cb" << std::endl;
         _ws_conn.reset();
     }
-    _ws_conn = std::make_shared<WebSocketConnection>(conn, conn->get_name());
+    _ws_conn = std::make_shared<WebSocketConnection>(conn, conn->get_name(), false);
     handshake_req(conn);
 }
 
@@ -69,12 +70,12 @@ void WsClient::handle_disconnected(TcpConnPtr &conn)
     LOG(DEBUG) << _name << " disconnected:" << conn->get_name() << std::endl;
     if (nullptr != _ws_conn)
     {
-        assert((_ws_conn._tcp_conn)->get_fd() == conn->get_fd());
+        assert((_ws_conn->_tcp_conn)->get_fd() == conn->get_fd());
         if (_disconnected_cb)
         {
             _disconnected_cb(_ws_conn);
         }
-        LOG(DEBUG) << "release _ws_conn" << std::endl
+        LOG(DEBUG) << "release _ws_conn" << std::endl;
         _ws_conn.reset();
     }
     else

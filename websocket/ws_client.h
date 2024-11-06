@@ -24,7 +24,7 @@ public:
     ~WsClient(){}
     bool connect(std::string server_ip, int server_port);
 
-
+    
     void set_newconn_cb(WsClientNewConnCb newconn_cb) {
         _newconn_cb = newconn_cb;
     }
