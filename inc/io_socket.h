@@ -10,7 +10,7 @@ namespace tinynet
 class IoSocket {
 
 public:
-    enum Protocol { TCP, UDP };
+    enum Protocol { TCP, UDP, CAN };
 
     IoSocket(std::string name, Protocol protocol);
     ~IoSocket();
@@ -20,6 +20,9 @@ public:
     int accept_socket(std::string& client_ip, int& client_port);
     int connect_socket(struct sockaddr* addr, socklen_t addrlen);
     ssize_t write_data(const void* buffer, size_t length);
+
+    /* only support for std can*/
+    ssize_t write_can_data(uint32_t can_id, const void* buffer, size_t length);
     ssize_t read_data(void* buffer, size_t length);
     int get_fd(void) {return _sockfd;}
     int get_socket_error(void);
