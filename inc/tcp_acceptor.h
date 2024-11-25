@@ -12,7 +12,7 @@ namespace tinynet
 
 class TcpAcceptor {
 public:
-    using NewConnCb = std::function<void(std::shared_ptr<TcpConnection> conn)>;
+    using NewConnCb = std::function<void(int, const std::string &client_ip, int client_port)>;
     TcpAcceptor(EventLoop *event_loop, const std::string& ip, int port, std::string name);
     ~TcpAcceptor();
     void set_newconn_cb(NewConnCb newconn_cb) {_newconn_cb = newconn_cb;}

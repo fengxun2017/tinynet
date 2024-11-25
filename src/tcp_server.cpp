@@ -1,18 +1,32 @@
 #include <string>
 #include <utility>
+#include <sstream>
 #include "logging.h"
 #include "tcp_server.h"
 
 namespace tinynet
 {
 
-TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name)
+void TcpServer::set_worker_thread_num(uint8_t num)
+{
+    _work_thread_num = num;
+    _event_loop_pool.create_pool(num);
+}
+
+TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name, uint8_t work_thread_num)
     : _name(name),
-      _acceptor(event_loop, ip, port, _name+":acceptor")
+      _ip(ip),
+      _port(port),
+      _acceptor(event_loop, ip, port, _name+"_acceptor"),
+      _event_loop_pool(event_loop, _name+"_event_loop"),
+      _work_thread_num(0)
 {
     _event_loop = event_loop;
-    _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this, std::placeholders::_1));
-    LOG(DEBUG) << "Service: [" << ip <<":" << port <<"] is created" << std::endl;
+    _acceptor.set_newconn_cb(std::bind(&TcpServer::handle_new_connection, this,
+        std::placeholders::_1,
+        std::placeholders::_2,
+        std::placeholders::_3));
+    LOG(DEBUG) << "Service object: [" << ip <<":" << port <<"] is created" << std::endl;
 }
 
 TcpServer::~TcpServer(void)
@@ -46,12 +60,11 @@ void TcpServer::stop(void)
     _connections.clear();
 }
 
-void TcpServer::handle_new_connection(TcpConnPtr new_conn)
+void TcpServer::handle_new_connection(int sockfd, const std::string& client_ip, int client_port)
 {
-    if(nullptr != new_conn)
-    {
+
 #ifdef TINYNET_DEBUG
-        auto item = _connections.find(new_conn->get_fd());
+        auto item = _connections.find(sockfd);
         if (item != _connections.end())
         {
             LOG(ERROR) << "The same file descriptor already exists! something wrong" << std::endl; 
@@ -59,11 +72,18 @@ void TcpServer::handle_new_connection(TcpConnPtr new_conn)
         else
 #endif
         {
-            // LOG(INFO) << "The connection from " << new_conn->get_client_ip() 
-            //     << ":" << new_conn->get_client_port() << " is established" 
-            //     << std::endl;
-            _connections.emplace(std::make_pair(new_conn->get_fd(), new_conn));
+            LOG(INFO) << "server:[" << _ip << ":" << _port << "] receives a connection request from client:["
+                <<  client_ip << ":" << client_port << "]" << std::endl;
+        
+            std::ostringstream oss;
+            oss << "[" << _ip << ":" << _port << "<->"
+                    <<  client_ip << ":" << client_port << "]";
+            std::string conn_name = std::move(oss.str());
 
+            EventLoop *event_loop = _event_loop_pool.get_next_loop();
+            TcpConnPtr new_conn = std::make_shared<TcpConnection>(sockfd, client_ip, client_port, _ip, _port, event_loop, conn_name);
+
+            _connections.emplace(std::make_pair(new_conn->get_fd(), new_conn));
             new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this, std::placeholders::_1));
             new_conn->set_onmessage_cb(std::bind(&TcpServer::handle_message, this,
                                         std::placeholders::_1,
@@ -77,11 +97,7 @@ void TcpServer::handle_new_connection(TcpConnPtr new_conn)
                 _newconn_cb(new_conn);
             }
         }
-    }
-    else
-    {
-        LOG(ERROR) << "new_conn is NULL in TcpServer::handle_new_connection" << std::endl;
-    }
+
 }
 
 

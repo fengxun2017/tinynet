@@ -1,5 +1,5 @@
-#ifndef _TINYNET_EVENT_POOL_H_
-#define _TINYNET_EVENT_POOL_H_
+#ifndef _TINYNET_EVENT_LOOP_H_
+#define _TINYNET_EVENT_LOOP_H_
 
 #include <vector>
 #include <memory>
@@ -31,4 +31,4 @@ private:
 
 
 
-#endif // _TINYNET_EVENT_POOL_H_
+#endif // _TINYNET_EVENT_LOOP_H_

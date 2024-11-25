@@ -9,7 +9,8 @@
 namespace tinynet
 {
 
-IoPoller::IoPoller(void) :_event_wait(3)
+IoPoller::IoPoller(void) 
+    :_event_wait(3)
 {
     _poll_fd = epoll_create1(EPOLL_CLOEXEC);
     if (!check_fd(_poll_fd))

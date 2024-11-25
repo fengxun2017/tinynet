@@ -6,6 +6,7 @@
 #include "event_loop.h"
 #include "tcp_connection.h"
 #include "tcp_acceptor.h"
+#include "event_loop_pool.h"
 
 namespace tinynet
 {
@@ -17,7 +18,7 @@ public:
     using TcpSrvOnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
     using TcpSrvWriteCompleteCb = std::function<void(TcpConnPtr&)>;
 
-    TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name);
+    TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name, uint8_t work_thread_num=0);
     ~TcpServer(void);
 
     void set_newconn_cb(TcpSrvNewConnCb newconn_cb) {
@@ -38,9 +39,9 @@ public:
 
     bool start(void);
     void stop(void);
-
+    void set_worker_thread_num(uint8_t num);
 private:
-    void handle_new_connection(TcpConnPtr conn);
+    void handle_new_connection(int sockfd, const std::string& client_ip, int client_port);
 
     void handle_disconnected(TcpConnPtr conn);
 
@@ -48,6 +49,8 @@ private:
 
     void handle_write_complete(TcpConnPtr conn);
     std::string _name;
+    std::string _ip;
+    int _port;
     TcpAcceptor _acceptor;
     std::unordered_map<int, TcpConnPtr> _connections;
     TcpSrvNewConnCb _newconn_cb = nullptr;
@@ -55,6 +58,8 @@ private:
     TcpSrvOnMessageCb _on_message_cb = nullptr;
     TcpSrvWriteCompleteCb _write_complete_cb = nullptr;
     EventLoop *_event_loop = nullptr;
+    EventLoopPool _event_loop_pool;
+    uint8_t _work_thread_num;
 };
 
 }  // namespace tinynet

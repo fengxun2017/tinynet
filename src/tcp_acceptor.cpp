@@ -69,33 +69,14 @@ void TcpAcceptor::accept_connection(void)
 #ifdef TINYNET_DEBUG
      check_fd_nonblock(client_sockfd);
 #endif
-        // if (0 == getpeername(client_sockfd, (struct sockaddr*)&client_addr, &client_len))
-        // {
-        //     char ipv4_str[INET_ADDRSTRLEN] = {0};
-        //     if(NULL != inet_ntop(AF_INET, &(client_addr.sin_addr.s_addr), ipv4_str, INET_ADDRSTRLEN))
-        //     {
-        //         client_ip = std::string(ipv4_str);
-        //         client_port = ntohs(client_addr.sin_port);
-        //     }
-        // }
-        LOG(INFO) << "server:[" << _ip << ":" << _port << "] receives a connection request from client:["
-                <<  client_ip << ":" << client_port << "]" << std::endl;
-        
-        std::ostringstream oss;
-        oss << "[" << _ip << ":" << _port << "<->"
-                <<  client_ip << ":" << client_port << "]";
-        std::string conn_name = std::move(oss.str());
-        new_conn = std::make_shared<TcpConnection>(client_sockfd, client_ip, client_port, _ip, _port, _event_loop, conn_name);
-        // new_conn->enable_write();
+        if (nullptr != _newconn_cb)
+        {
+            _newconn_cb(client_sockfd, client_ip, client_port);
+        }
     }
     else
     {
         LOG(ERROR) << "accept failed in TcpAcceptor::accept_connection, err info:" << error_to_str(errno); 
-    }
-
-    if (nullptr != _newconn_cb && nullptr != new_conn)
-    {
-        _newconn_cb(new_conn);
     }
 }
 
