@@ -2,7 +2,7 @@
 message(STATUS "in netlib show PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 
 # 搜索源文件
-file(GLOB SOURCES "src/*.cpp" "http/*.cpp" "websocket/*.cpp" "secure/*.cpp")
+file(GLOB SOURCES "src/*.cpp" "http/*.cpp" "websocket/*.cpp" "secure/*.cpp" "can/*.cpp")
 
 # 创建静态库
 add_library(netlib STATIC ${SOURCES})
@@ -14,6 +14,7 @@ target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/inc)
 target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/http)
 target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/websocket)
 target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/secure)
+target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/can)
 
 # 链接 loglib 库
 target_link_libraries(netlib PUBLIC loglib)

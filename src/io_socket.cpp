@@ -190,7 +190,7 @@ ssize_t IoSocket::write_can_data(uint32_t can_id, const void* buffer, size_t len
             
             frame.can_dlc = length;
             frame.can_id = can_id;
-            write(_sockfd, &frame, sizeof(frame));
+            ret = ::write(_sockfd, &frame, sizeof(frame));
         }
     }
     else 
