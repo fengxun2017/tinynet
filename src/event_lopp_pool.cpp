@@ -25,10 +25,10 @@ void EventLoopPool::create_pool(uint8_t pool_size)
         std::future<EventLoop *> future = promise.get_future();
         std::string sub_name = _name + "_work_thread_" + std::to_string(index);
         std::thread t(&EventLoopPool::loop_thread, this, std::ref(promise), sub_name);
-        auto loop = future.get();
+        auto p_loop = future.get();
 
         _threads.push_back(std::move(t));
-        _loops.push_back(loop);
+        _loops.push_back(p_loop);
     }
 }
 
@@ -60,12 +60,12 @@ EventLoop* EventLoopPool::get_next_loop(void)
 
     if (_pool_size > 0)
     {
-        LOG(DEBUG) << "get loop:" << index%_pool_size << std::endl;
+        LOG(DEBUG) << "get event loop:" << index%_pool_size << std::endl;
         ret = _loops[index++%_pool_size];
     }
     else
     {
-        LOG(DEBUG) << "get master loop" << std::endl;
+        LOG(DEBUG) << "get event loop: master loop" << std::endl;
         ret = _master_loop;
     }
 

@@ -33,6 +33,8 @@ public:
     void disable_read(void);
     void disable_write(void);
     void disable_all(void);
+    bool is_writing(void);
+
     int get_fd(void) {return _fd;}
     void set_events_received(int events) {_events_received = events;}
     std::string get_name(void) {return _name;}

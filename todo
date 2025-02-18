@@ -1,5 +1,6 @@
 use uniq_ptr
 use nocopyable
+去掉assert，使用if，并使用likely
 不要使用delete
 使用const修饰string引用。
 

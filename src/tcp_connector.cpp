@@ -67,7 +67,6 @@ bool TcpConnector::connect(std::string& server_ip, int server_port)
             LOG(ERROR) << _name << " connect to [" << server_ip << ":" << server_port << "] failed, err info:" << error_to_str(errno);
             _connector_socket.close();
             break;
-
     }
     return ret;
 }

@@ -10,7 +10,6 @@ namespace tinynet
 void TcpServer::set_worker_thread_num(uint8_t num)
 {
     _work_thread_num = num;
-    _event_loop_pool.create_pool(num);
 }
 
 TcpServer::TcpServer(EventLoop *event_loop, const std::string& ip, int port, std::string name, uint8_t work_thread_num)
@@ -38,6 +37,7 @@ TcpServer::~TcpServer(void)
 bool TcpServer::start(void)
 {
     bool ret = false;
+    _event_loop_pool.create_pool(_work_thread_num);
 
     ret = _acceptor.start();
     LOG(INFO) << _name << " start!" << std::endl;
@@ -110,7 +110,7 @@ void TcpServer::handle_disconnected(TcpConnPtr conn)
         if (_disconnected_cb) {
             _disconnected_cb(conn);
         }
-        // The release should be at the end
+        // NOTE: The release should be at the end
         (void)_connections.erase(item);
     }
     else

@@ -75,6 +75,17 @@ void IoChannel::enable_write(void)
     _events_interested |= EPOLLOUT;
     update_poll_cfg();
 }
+
+bool IoChannel::is_writing(void)
+{
+    bool ret = false;
+    if (_events_interested & EPOLLOUT)
+    {
+        ret = true; 
+    }
+
+    return ret;
+}
 void IoChannel::disable_write(void)
 {
     LOG(INFO) << _name << ":disable write" << std::endl;
