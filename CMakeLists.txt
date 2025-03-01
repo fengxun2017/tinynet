@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.10)
 
 message(STATUS "in netlib show PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 
@@ -15,6 +16,13 @@ target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/http)
 target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/websocket)
 target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/secure)
 target_include_directories(netlib PUBLIC ${CMAKE_CURRENT_LIST_DIR}/can)
+
+if(NOT TARGET loglib)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../tinylog ${CMAKE_CURRENT_BINARY_DIR}/tinylog)
+endif()
+
+enable_testing()
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/utest)
 
 # 链接 loglib 库
 target_link_libraries(netlib PUBLIC loglib)

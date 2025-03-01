@@ -2,3 +2,5 @@
 build/*
 output/*
 tmp.txt
+lib/*
+utest/build/*

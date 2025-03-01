@@ -24,6 +24,7 @@ public:
 
     void quit();
 
+    bool is_quit(){return _quit;}
     std::shared_ptr<IoPoller> &get_poller(void) {return _poller;}
 
     bool is_in_loop_thread(void) {return std::this_thread::get_id() == _thread_id;}
