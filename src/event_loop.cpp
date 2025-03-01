@@ -69,9 +69,10 @@ void EventLoop::run_in_loop(RunInLoopCallBack cb, std::string obj_desc)
     else
     {
         LOG(DEBUG) << obj_desc << " will run in thread: " << _thread_id << std::endl;
-        std::lock_guard<std::mutex> lock(_pending_array_mutex);
-        _pending_cb_array.push_back(cb);
-
+        {
+            std::lock_guard<std::mutex> lock(_pending_array_mutex);
+            _pending_cb_array.push_back(cb);
+        }
         if(!is_in_loop_thread())
         {
             wakeup_loop();
