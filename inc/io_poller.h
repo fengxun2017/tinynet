@@ -1,33 +1,33 @@
+// io_poller.h
 #ifndef _TINYNET_IO_POLLER_H_
 #define _TINYNET_IO_POLLER_H_
 
 #include <vector>
 #include <unordered_map>
 #include <sys/epoll.h>
-#include "io_channel.h"
+#include "io_poller_interface.h"
 
 namespace tinynet
 {
 
-class IoPoller
+class IoPoller final : public IoPollerInterface
 {
 public:
-
     IoPoller(void);
-    ~IoPoller() ;
+    ~IoPoller() override;
 
-    void poll(int timeout_ms, Channels &active_channels);
-    void add_channel(IoChannel &channel);
-    void remove_channel(IoChannel &channel);
-    void update_channel(IoChannel &channel);
+    void poll(int timeout_ms, IoChannels &active_channels) override;
+    void add_channel(IoChannelInterface &channel) override;
+    void remove_channel(IoChannelInterface &channel) override;
+    void update_channel(IoChannelInterface &channel) override;
+
 private:
-
-    int cfg_channel(int op, IoChannel &channel);
-
+    int cfg_channel(int op, IoChannelInterface &channel);
     int _poll_fd;
-     std::unordered_map<int, IoChannel *> channel_map;
+    std::unordered_map<int, IoChannelInterface *> channel_map;
     std::vector<struct epoll_event> _event_wait;
 };
 
 }  // namespace tinynet
+
 #endif  // _TINYNET_IO_POLLER_H_

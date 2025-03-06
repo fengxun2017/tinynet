@@ -5,8 +5,9 @@
 #include <vector>
 #include <memory>
 #include <thread>
-#include "io_channel.h"
-#include "io_poller.h"
+#include "io_channel_interface.h"
+#include "io_poller_interface.h"
+#include "wakeup_poller_interface.h"
 
 namespace tinynet
 {
@@ -14,8 +15,7 @@ namespace tinynet
 class EventLoop
 {
 public:
-    using RunInLoopCallBack = std::function<void(void)> ;
-
+    using RunInLoopCallBack = std::function<void(void)>;
 
     EventLoop(void);
     ~EventLoop() {/*FIXME: clear-up work*/}
@@ -25,11 +25,9 @@ public:
     void quit();
 
     bool is_quit(){return _quit;}
-    std::shared_ptr<IoPoller> &get_poller(void) {return _poller;}
+    std::shared_ptr<IoPollerInterface> &get_poller(void) {return _poller;}
 
     bool is_in_loop_thread(void) {return std::this_thread::get_id() == _thread_id;}
-
-    void wakeup_loop(void);
 
     void run_in_loop(RunInLoopCallBack cb, std::string obj_desc);
     
@@ -39,16 +37,13 @@ private:
     void exec_pending_cb(void);
 
     bool _quit;
-    std::shared_ptr<IoPoller> _poller;
+    std::shared_ptr<IoPollerInterface> _poller;
     std::thread::id _thread_id;
-    int _event_fd;
-    IoChannel _channel;
+    std::unique_ptr<PollerWakeupInterface> _poller_wakeup;
     std::vector<RunInLoopCallBack> _pending_cb_array;
     std::mutex _pending_array_mutex;
 };
 
 } // namespace tinynet
-
-
 
 #endif // _TINYNET_EVENT_LOOP_H_

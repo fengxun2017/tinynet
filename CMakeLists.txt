@@ -21,9 +21,6 @@ if(NOT TARGET loglib)
 add_subdirectory(${CMAKE_SOURCE_DIR}/../tinylog ${CMAKE_CURRENT_BINARY_DIR}/tinylog)
 endif()
 
-enable_testing()
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/utest)
-
 # 链接 loglib 库
 target_link_libraries(netlib PUBLIC loglib)
 target_compile_definitions(netlib PRIVATE TINYNET_DEBUG)

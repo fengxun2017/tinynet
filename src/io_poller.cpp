@@ -3,9 +3,10 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include "io_poller.h"
-#include "io_channel.h"
+#include "io_channel_interface.h"
 #include "logging.h"
 #include "tinynet_util.h"
+
 namespace tinynet
 {
 
@@ -29,7 +30,7 @@ IoPoller::~IoPoller()
     }
 }
 
-void IoPoller::poll(int timeout_ms, Channels &active_channels)
+void IoPoller::poll(int timeout_ms, IoChannels &active_channels)
 {
     int num;
 
@@ -43,10 +44,9 @@ void IoPoller::poll(int timeout_ms, Channels &active_channels)
     {
         for (int index = 0; index < num; index++)
         {
-            IoChannel *channel = static_cast<IoChannel *>(_event_wait[index].data.ptr);
+            IoChannelInterface *channel = static_cast<IoChannelInterface *>(_event_wait[index].data.ptr);
             if (nullptr != channel)
             {
-                // LOG(DEBUG) << channel->get_name() << " received the event" << std::endl;
                 channel->set_events_received(_event_wait[index].events);
                 active_channels.push_back(channel);
             }
@@ -75,8 +75,7 @@ void IoPoller::poll(int timeout_ms, Channels &active_channels)
     }
 }
 
-
-int IoPoller::cfg_channel(int op, IoChannel &channel)
+int IoPoller::cfg_channel(int op, IoChannelInterface &channel)
 {
     struct epoll_event event;
     int ret = 0;
@@ -100,7 +99,7 @@ int IoPoller::cfg_channel(int op, IoChannel &channel)
     return ret;
 }
 
-void IoPoller::add_channel(IoChannel &channel)
+void IoPoller::add_channel(IoChannelInterface &channel)
 {
     int ret;
     LOG(INFO) << channel.get_name() << ":EPOLL_CTL_ADD" << std::endl;
@@ -111,7 +110,7 @@ void IoPoller::add_channel(IoChannel &channel)
     }
 }
 
-void IoPoller::remove_channel(IoChannel &channel)
+void IoPoller::remove_channel(IoChannelInterface &channel)
 {
     int ret;
     LOG(INFO) << channel.get_name() << ":EPOLL_CTL_DEL" << std::endl;
@@ -122,7 +121,7 @@ void IoPoller::remove_channel(IoChannel &channel)
     }
 }
 
-void IoPoller::update_channel(IoChannel &channel)
+void IoPoller::update_channel(IoChannelInterface &channel)
 {
     int ret;
     LOG(INFO) << channel.get_name() << ":EPOLL_CTL_MOD" << std::endl;
