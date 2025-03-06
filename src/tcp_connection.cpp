@@ -28,7 +28,7 @@ TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int clien
       _write_data_buffer(4096),
       _event_loop(event_loop)
 {
-    _channel.set_reab_callback(std::bind(&TcpConnection::handle_onmessage, this));
+    _channel.set_read_callback(std::bind(&TcpConnection::handle_onmessage, this));
     _channel.set_write_callback(std::bind(&TcpConnection::handle_write_complete, this));
     _channel.set_close_callback(std::bind(&TcpConnection::handle_disconnected, this));
 

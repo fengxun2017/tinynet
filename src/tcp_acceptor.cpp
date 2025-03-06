@@ -42,7 +42,7 @@ bool TcpAcceptor::start()
     }
     LOG(DEBUG) << "listen on [" << _ip << ":" << _port << "] success" << std::endl;
 
-    _channel.set_reab_callback(std::bind(&TcpAcceptor::accept_connection, this));
+    _channel.set_read_callback(std::bind(&TcpAcceptor::accept_connection, this));
     _channel.enable_read();
 
     // LOG(INFO) << "server: [" << _ip << ":" << _port << "] start!" << std::endl;

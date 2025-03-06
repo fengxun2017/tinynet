@@ -2,7 +2,8 @@
 #include <sys/epoll.h>
 #include <sstream>
 #include <memory>
-#include "io_poller.h"
+#include <string>
+#include "io_poller_interface.h"
 #include "io_channel.h"
 #include "logging.h"
 
@@ -36,7 +37,7 @@ void IoChannel::update_poll_cfg(void)
     }
 }
 
-IoChannel::IoChannel(int fd, std::shared_ptr<IoPoller> &poller, std::string name)
+IoChannel::IoChannel(int fd, std::shared_ptr<IoPollerInterface> &poller, std::string name)
     : _fd(fd), _poller(poller), _name(name)
 {
     LOG(DEBUG) << "IoCchannel created: " << _name << std::endl;
@@ -86,6 +87,7 @@ bool IoChannel::is_writing(void)
 
     return ret;
 }
+
 void IoChannel::disable_write(void)
 {
     LOG(INFO) << _name << ":disable write" << std::endl;
@@ -105,9 +107,9 @@ static std::string event_to_string(uint32_t event_mask)
 
   return oss.str();
 }
+
 void IoChannel::handle_event(void)
 {
-
     LOG(DEBUG) << _name << ": recv event: " << event_to_string(_events_received) << std::endl;
     if ((_events_received & (EPOLLIN | EPOLLPRI)) && _read_cb)
     {
