@@ -15,7 +15,7 @@ class IoChannel final : public IoChannelInterface
 public:
     enum ChannelState { IN_POLLER, NOTIN_POLER };
 
-    IoChannel(int fd, std::shared_ptr<IoPollerInterface> &poller, std::string name);
+    IoChannel(int fd, std::shared_ptr<IoPollerInterface> poller, std::string name);
     ~IoChannel() override;
 
     void set_read_callback(ChannelEventCallback read_cb) override {_read_cb = read_cb;}

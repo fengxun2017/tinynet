@@ -16,10 +16,10 @@ public:
     IoPoller(void);
     ~IoPoller() override;
 
-    void poll(int timeout_ms, IoChannels &active_channels) override;
-    void add_channel(IoChannelInterface &channel) override;
-    void remove_channel(IoChannelInterface &channel) override;
-    void update_channel(IoChannelInterface &channel) override;
+    int poll(int timeout_ms, IoChannels &active_channels) override;
+    int add_channel(IoChannelInterface &channel) override;
+    int remove_channel(IoChannelInterface &channel) override;
+    int update_channel(IoChannelInterface &channel) override;
 
 private:
     int cfg_channel(int op, IoChannelInterface &channel);

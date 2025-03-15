@@ -4,3 +4,4 @@ output/*
 tmp.txt
 lib/*
 utest/build/*
+utest/lib/*
