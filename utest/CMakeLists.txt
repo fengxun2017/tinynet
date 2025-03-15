@@ -21,9 +21,10 @@ FetchContent_MakeAvailable(googletest)
 message(STATUS "Google Test fetched successfully!")
 
 
-file(GLOB COMM_SOURCE_FILES "../src/*.cpp")
+file(GLOB COMM_SOURCE_FILES "../src/*.cpp" "../src/poller/*.cpp")
 # 将头文件路径添加到包含路径
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../inc)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/../inc/poller)
 
 if(NOT TARGET loglib)
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/../../tinylog ${CMAKE_CURRENT_BINARY_DIR}/tinylog)

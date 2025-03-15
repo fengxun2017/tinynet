@@ -48,7 +48,19 @@ TEST_F(IoPollerTest, TestAddChannel) {
     EXPECT_CALL(mock_channel, get_events_interested()).WillOnce(Return(1));
     EXPECT_CALL(mock_channel, get_name()).WillOnce(Return("test"));
 
-    io_poller->add_channel(mock_channel);
+    EXPECT_EQ(io_poller->add_channel(mock_channel), 0);
+    // Additional checks can be added here to verify the internal state of io_poller
+}
+
+TEST_F(IoPollerTest, TestAddChannelFail) {
+    MockIoChannel mock_channel;
+
+    // An invalid file descriptor was used
+    EXPECT_CALL(mock_channel, get_fd()).WillOnce(Return(-1));
+    EXPECT_CALL(mock_channel, get_events_interested()).WillOnce(Return(1));
+    EXPECT_CALL(mock_channel, get_name()).WillOnce(Return("test"));
+
+    EXPECT_NE(io_poller->add_channel(mock_channel), 0);
     // Additional checks can be added here to verify the internal state of io_poller
 }
 
@@ -58,10 +70,23 @@ TEST_F(IoPollerTest, TestRemoveChannel) {
     EXPECT_CALL(mock_channel, get_events_interested()).Times(2).WillRepeatedly(Return(1));
     EXPECT_CALL(mock_channel, get_name()).Times(2).WillRepeatedly(Return("test"));
 
-    io_poller->add_channel(mock_channel);
-    io_poller->remove_channel(mock_channel);
+    EXPECT_EQ(io_poller->add_channel(mock_channel), 0);
+    EXPECT_EQ(io_poller->remove_channel(mock_channel), 0);
     // Additional checks can be added here to verify the internal state of io_poller
 }
+TEST_F(IoPollerTest, TestRemoveChannelFail) {
+    MockIoChannel mock_channel;
+
+    // An invalid file descriptor was used
+    EXPECT_CALL(mock_channel, get_fd()).Times(2).WillRepeatedly(Return(-1));
+    EXPECT_CALL(mock_channel, get_events_interested()).Times(2).WillRepeatedly(Return(1));
+    EXPECT_CALL(mock_channel, get_name()).Times(2).WillRepeatedly(Return("test"));
+
+    EXPECT_NE(io_poller->add_channel(mock_channel), 0);
+    EXPECT_NE(io_poller->remove_channel(mock_channel), 0);
+    // Additional checks can be added here to verify the internal state of io_poller
+}
+
 
 TEST_F(IoPollerTest, TestUpdateChannel) {
     MockIoChannel mock_channel;
@@ -69,8 +94,21 @@ TEST_F(IoPollerTest, TestUpdateChannel) {
     EXPECT_CALL(mock_channel, get_events_interested()).Times(2).WillRepeatedly(Return(1));
     EXPECT_CALL(mock_channel, get_name()).Times(2).WillRepeatedly(Return("test"));
 
-    io_poller->add_channel(mock_channel);
-    io_poller->update_channel(mock_channel);
+    EXPECT_EQ(io_poller->add_channel(mock_channel), 0);
+    EXPECT_EQ(io_poller->update_channel(mock_channel), 0);
+    // Additional checks can be added here to verify the internal state of io_poller
+}
+
+TEST_F(IoPollerTest, TestUpdateChannelFail) {
+    MockIoChannel mock_channel;
+
+    // An invalid file descriptor was used
+    EXPECT_CALL(mock_channel, get_fd()).Times(2).WillRepeatedly(Return(-1));
+    EXPECT_CALL(mock_channel, get_events_interested()).Times(2).WillRepeatedly(Return(1));
+    EXPECT_CALL(mock_channel, get_name()).Times(2).WillRepeatedly(Return("test"));
+
+    EXPECT_NE(io_poller->add_channel(mock_channel), 0);
+    EXPECT_NE(io_poller->update_channel(mock_channel), 0);
     // Additional checks can be added here to verify the internal state of io_poller
 }
 
@@ -80,8 +118,7 @@ TEST_F(IoPollerTest, TestPoll) {
     EXPECT_CALL(mock_channel, get_events_interested()).WillOnce(Return(1));
     EXPECT_CALL(mock_channel, get_name()).WillOnce(Return("test"));
 
-    io_poller->add_channel(mock_channel);
+    EXPECT_EQ(io_poller->add_channel(mock_channel), 0);
     IoChannels active_channels;
-    io_poller->poll(1000, active_channels);
-    // Additional checks can be added here to verify the internal state of io_poller and active_channels
+    EXPECT_EQ(io_poller->poll(1000, active_channels), 0);
 }

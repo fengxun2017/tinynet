@@ -1,15 +1,16 @@
-#ifndef _TINYNET_IO_POLLER_INTERFACE_H_
-#define _TINYNET_IO_POLLER_INTERFACE_H_
+#ifndef _TINYNET_POLLER_INTERFACE_H_
+#define _TINYNET_POLLER_INTERFACE_H_
 
+#include <vector>
 #include "io_channel_interface.h"
 
 namespace tinynet
 {
 
-class IoPollerInterface
+class PollerInterface
 {
 public:
-    virtual ~IoPollerInterface() = default;
+    virtual ~PollerInterface() = default;
 
     virtual int poll(int timeout_ms, IoChannels &active_channels) = 0;
     virtual int add_channel(IoChannelInterface &channel) = 0;
@@ -19,4 +20,4 @@ public:
 
 }  // namespace tinynet
 
-#endif  // _TINYNET_IO_POLLER_INTERFACE_H_
+#endif  // _TINYNET_POLLER_INTERFACE_H_
