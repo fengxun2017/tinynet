@@ -37,7 +37,7 @@ void IoChannel::update_poll_cfg(void)
     }
 }
 
-IoChannel::IoChannel(int fd, std::shared_ptr<IoPollerInterface> &poller, std::string name)
+IoChannel::IoChannel(int fd, std::shared_ptr<IoPollerInterface> poller, std::string name)
     : _fd(fd), _poller(poller), _name(name)
 {
     LOG(DEBUG) << "IoCchannel created: " << _name << std::endl;

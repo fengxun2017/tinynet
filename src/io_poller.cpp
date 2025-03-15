@@ -30,13 +30,15 @@ IoPoller::~IoPoller()
     }
 }
 
-void IoPoller::poll(int timeout_ms, IoChannels &active_channels)
+int IoPoller::poll(int timeout_ms, IoChannels &active_channels)
 {
     int num;
+    int ret = 0;
 
     if(!check_fd(_poll_fd))
     {
-        return ;
+        LOG(ERROR) << "check_fd failed in IoPoller::poll, _poll_fd = " << _poll_fd << std::endl;
+        return -1;
     }
 
     num = epoll_wait(_poll_fd, _event_wait.data(), _event_wait.size(), timeout_ms);
@@ -72,7 +74,10 @@ void IoPoller::poll(int timeout_ms, IoChannels &active_channels)
         LOG(ERROR) << "epoll_wait failed in IoPoller::poll, error info:"
                 << error_to_str(errno)
                 << std::endl;
+        ret = -1;
     }
+
+    return ret;
 }
 
 int IoPoller::cfg_channel(int op, IoChannelInterface &channel)
@@ -99,37 +104,46 @@ int IoPoller::cfg_channel(int op, IoChannelInterface &channel)
     return ret;
 }
 
-void IoPoller::add_channel(IoChannelInterface &channel)
+int IoPoller::add_channel(IoChannelInterface &channel)
 {
-    int ret;
+    int ret = 0;
+
     LOG(INFO) << channel.get_name() << ":EPOLL_CTL_ADD" << std::endl;
     ret = cfg_channel(EPOLL_CTL_ADD, channel);
     if (0 != ret)
     {
         LOG(ERROR) << "IoPoller::add_channel failed" << std::endl;
     }
+
+    return ret;
 }
 
-void IoPoller::remove_channel(IoChannelInterface &channel)
+int IoPoller::remove_channel(IoChannelInterface &channel)
 {
-    int ret;
+    int ret = 0;
+
     LOG(INFO) << channel.get_name() << ":EPOLL_CTL_DEL" << std::endl;
     ret = cfg_channel(EPOLL_CTL_DEL, channel);
     if (0 != ret)
     {
         LOG(ERROR) << "IoPoller::remove_channel failed" << std::endl;
     }
+
+    return ret;
 }
 
-void IoPoller::update_channel(IoChannelInterface &channel)
+int IoPoller::update_channel(IoChannelInterface &channel)
 {
-    int ret;
+    int ret = 0;
+
     LOG(INFO) << channel.get_name() << ":EPOLL_CTL_MOD" << std::endl;
     ret = cfg_channel(EPOLL_CTL_MOD, channel);
     if (0 != ret)
     {
         LOG(ERROR) << "IoPoller::update_channel failed" << std::endl;
     }
+
+    return ret;
 }
 
 }  // namespace tinynet

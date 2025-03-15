@@ -11,10 +11,10 @@ class IoPollerInterface
 public:
     virtual ~IoPollerInterface() = default;
 
-    virtual void poll(int timeout_ms, IoChannels &active_channels) = 0;
-    virtual void add_channel(IoChannelInterface &channel) = 0;
-    virtual void remove_channel(IoChannelInterface &channel) = 0;
-    virtual void update_channel(IoChannelInterface &channel) = 0;
+    virtual int poll(int timeout_ms, IoChannels &active_channels) = 0;
+    virtual int add_channel(IoChannelInterface &channel) = 0;
+    virtual int remove_channel(IoChannelInterface &channel) = 0;
+    virtual int update_channel(IoChannelInterface &channel) = 0;
 };
 
 }  // namespace tinynet

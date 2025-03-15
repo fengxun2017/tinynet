@@ -5,9 +5,9 @@
 #include <vector>
 #include <memory>
 #include <thread>
-#include "io_channel_interface.h"
 #include "io_poller_interface.h"
 #include "wakeup_poller_interface.h"
+#include "wakeup_poller.h"
 
 namespace tinynet
 {
@@ -17,7 +17,20 @@ class EventLoop
 public:
     using RunInLoopCallBack = std::function<void(void)>;
 
+    // delete copy/move constructor and operator
+    EventLoop(const EventLoop &) = delete;
+    EventLoop &operator=(const EventLoop &) = delete;
+    EventLoop(EventLoop &&) = delete;
+    EventLoop &operator=(EventLoop &&) = delete;
+
     EventLoop(void);
+
+    /* This constructor is implemented only for the convenience of gtest testing,
+       and the upper layer should not use the constructor, 
+       but should use the "EventLoop(void)" function to return the object.
+    */
+    explicit EventLoop(std::shared_ptr<IoPollerInterface> poller, std::unique_ptr<PollerWakeupInterface> poller_wakeup);
+
     ~EventLoop() {/*FIXME: clear-up work*/}
 
     void loop();
@@ -32,8 +45,6 @@ public:
     void run_in_loop(RunInLoopCallBack cb, std::string obj_desc);
     
 private:
-    int create_eventfd(void);
-    void handle_recv(void);
     void exec_pending_cb(void);
 
     bool _quit;

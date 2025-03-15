@@ -1,15 +1,25 @@
 #include <cstdlib>
+#include <iostream>
 #include <mutex>
 #include <errno.h>
+#include <thread>
 #include <vector>
 #include "event_loop.h"
 #include "logging.h"
 #include "tinynet_util.h"
 #include "io_poller.h"
-#include "wakeup_poller.h"
 
 namespace tinynet
 {
+
+EventLoop::EventLoop(std::shared_ptr<IoPollerInterface> poller, std::unique_ptr<PollerWakeupInterface> poller_wakeup)
+{
+    _quit = false;
+    _poller = std::move(poller);
+    _poller_wakeup = std::move(poller_wakeup);
+    _thread_id = std::this_thread::get_id();
+    LOG(DEBUG) << "event loop created in thread:" << _thread_id << std::endl;
+}
 
 EventLoop::EventLoop(void) 
     : _quit(false),
@@ -63,8 +73,13 @@ void EventLoop::loop()
 {
     if (!is_in_loop_thread())
     {
-        LOG(DEBUG) << "event loop run in thread:" << std::this_thread::get_id() << std::endl;
-        LOG(ERROR) << "EventLoop must be created and run in the same thread!!" << std::endl;
+        {
+            LOG(DEBUG) << "event loop run in thread:" << std::this_thread::get_id() << std::endl;
+            LOG(ERROR) << "EventLoop must be created and run in the same thread!!" << std::endl;
+            std::cerr << "EventLoop must be created and run in the same thread!!" << std::endl;
+        }
+        // Delay so that the error log can be output.
+        std::this_thread::sleep_for(std::chrono::milliseconds(1200));
         std::abort();
     }
 
