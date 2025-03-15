@@ -20,11 +20,11 @@ public:
 
     virtual void handle_event(void) = 0;
 
-    virtual void enable_read(void) = 0;
-    virtual void enable_write(void) = 0;
-    virtual void disable_read(void) = 0;
-    virtual void disable_write(void) = 0;
-    virtual void disable_all(void) = 0;
+    virtual int enable_read(void) = 0;
+    virtual int enable_write(void) = 0;
+    virtual int disable_read(void) = 0;
+    virtual int disable_write(void) = 0;
+    virtual int disable_all(void) = 0;
     virtual bool is_writing(void) = 0;
 
     virtual int get_fd(void) = 0;

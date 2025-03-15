@@ -18,11 +18,11 @@ public:
 
     MOCK_METHOD(void, handle_event, (), (override));
 
-    MOCK_METHOD(void, enable_read, (), (override));
-    MOCK_METHOD(void, enable_write, (), (override));
-    MOCK_METHOD(void, disable_read, (), (override));
-    MOCK_METHOD(void, disable_write, (), (override));
-    MOCK_METHOD(void, disable_all, (), (override));
+    MOCK_METHOD(int, enable_read, (), (override));
+    MOCK_METHOD(int, enable_write, (), (override));
+    MOCK_METHOD(int, disable_read, (), (override));
+    MOCK_METHOD(int, disable_write, (), (override));
+    MOCK_METHOD(int, disable_all, (), (override));
     MOCK_METHOD(bool, is_writing, (), (override));
 
     MOCK_METHOD(int, get_fd, (), (override));

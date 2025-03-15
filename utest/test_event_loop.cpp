@@ -32,11 +32,11 @@ public:
     MOCK_METHOD1(set_close_callback, void(ChannelEventCallback));
     MOCK_METHOD1(set_error_callback, void(ChannelEventCallback));
     MOCK_METHOD0(handle_event, void());
-    MOCK_METHOD0(enable_read, void());
-    MOCK_METHOD0(enable_write, void());
-    MOCK_METHOD0(disable_read, void());
-    MOCK_METHOD0(disable_write, void());
-    MOCK_METHOD0(disable_all, void());
+    MOCK_METHOD0(enable_read, int());
+    MOCK_METHOD0(enable_write, int());
+    MOCK_METHOD0(disable_read, int());
+    MOCK_METHOD0(disable_write, int());
+    MOCK_METHOD0(disable_all, int());
     MOCK_METHOD0(is_writing, bool());
     MOCK_METHOD0(get_fd, int());
     MOCK_METHOD1(set_events_received, void(int));
