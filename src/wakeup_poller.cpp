@@ -13,7 +13,8 @@ PollerWakeup::~PollerWakeup()
 
 int PollerWakeup::create_eventfd(void)
 {
-    int event_fd = eventfd(0, 0);
+    // use blocking mode
+    int event_fd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (event_fd == -1) 
     { 
         LOG(ERROR) << "EventLoop::create_eventfd failed, error info:"
@@ -25,13 +26,14 @@ int PollerWakeup::create_eventfd(void)
     return event_fd;
 }
 
-PollerWakeup::PollerWakeup(std::shared_ptr<IoPollerInterface>& _poller, std::string name)
+PollerWakeup::PollerWakeup(std::shared_ptr<IoPollerInterface> _poller, std::string name, WakeupCallback cb)
 {
+    _callback = cb;
     _event_fd = create_eventfd(),
-    _channel = std::make_unique<IoChannel>(_event_fd, _poller, name);
+    _channel = std::make_unique<IoChannel>(_event_fd, _poller, name+"_channel");
 
     _channel->set_read_callback(std::bind(&PollerWakeup::handle_recv, this));
-
+    _channel->enable_read();
 }
 void PollerWakeup::wakeup()
 {
@@ -54,6 +56,11 @@ void PollerWakeup::handle_recv(void)
         LOG(ERROR) << "PollerWakeup::handle_recv failed, error info:" 
             << error_to_str(errno)
             << std::endl;
+    }
+    
+    if (_callback)
+    {
+        _callback(result);
     }
 }
 

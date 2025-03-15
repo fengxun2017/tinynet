@@ -35,7 +35,10 @@ endif()
 enable_testing()
 
 # 批量添加目标,链接 Google Test 库
-set(TARGETS event_loop_test io_channel_test io_poller_test)
+set(TARGETS test_event_loop
+            test_io_channel
+            test_io_poller
+            test_wakeup_poller)
 foreach(target ${TARGETS})
     add_executable(${target} ${target}.cpp ${COMM_SOURCE_FILES})  # 假设每个目标的源文件与目标同名
     target_link_libraries(${target} gtest gmock gtest_main loglib)

@@ -10,31 +10,38 @@
 namespace tinynet
 {
 
-void IoChannel::update_poll_cfg(void)
+int IoChannel::update_poll_cfg(void)
 {
+    int ret = 0;
+
     if (nullptr == _poller)
     {
         LOG(ERROR) << _name << ":poller is null, in IoChannel::update_poll_cfg" << std::endl;
-        return ;
+        return -1;
     }
 
     if (0 != _events_interested)
     {
         if (NOTIN_POLER == _state)
         {
-            _poller->add_channel(*this);
-            _state = IN_POLLER;
+            ret = _poller->add_channel(*this);
+            if(0 == ret)
+            {
+                _state = IN_POLLER;
+            }
         }
         else
         {
-            _poller->update_channel(*this);
+            ret = _poller->update_channel(*this);
         }
     }
     else
     {
-        _poller->remove_channel(*this);
+        ret = _poller->remove_channel(*this);
         _state = NOTIN_POLER;
     }
+
+    return ret;
 }
 
 IoChannel::IoChannel(int fd, std::shared_ptr<IoPollerInterface> poller, std::string name)
@@ -49,32 +56,32 @@ IoChannel::~IoChannel()
     LOG(DEBUG) << _name << " has been destructed." << std::endl;
 }
 
-void IoChannel::disable_all(void)
+int IoChannel::disable_all(void)
 {
     LOG(INFO) << _name << ":disable_all" << std::endl;
     _events_interested = 0;
-    update_poll_cfg();
+    return update_poll_cfg();
 }
 
-void IoChannel::enable_read(void)
+int IoChannel::enable_read(void)
 {
     LOG(INFO) << _name << ":enable read" << std::endl;
     _events_interested |= (EPOLLIN | EPOLLPRI);
-    update_poll_cfg();
+    return update_poll_cfg();
 }
 
-void IoChannel::disable_read(void)
+int  IoChannel::disable_read(void)
 {
     LOG(INFO) << _name << ":disable read" << std::endl;
     _events_interested &= ~(EPOLLIN | EPOLLPRI);
-    update_poll_cfg();
+    return update_poll_cfg();
 }
 
-void IoChannel::enable_write(void)
+int IoChannel::enable_write(void)
 {
     LOG(INFO) << _name << ":enable write" << std::endl;
     _events_interested |= EPOLLOUT;
-    update_poll_cfg();
+    return update_poll_cfg();
 }
 
 bool IoChannel::is_writing(void)
@@ -88,11 +95,11 @@ bool IoChannel::is_writing(void)
     return ret;
 }
 
-void IoChannel::disable_write(void)
+int IoChannel::disable_write(void)
 {
     LOG(INFO) << _name << ":disable write" << std::endl;
     _events_interested &= ~EPOLLOUT;
-    update_poll_cfg();
+    return update_poll_cfg();
 }
 
 static std::string event_to_string(uint32_t event_mask)

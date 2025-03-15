@@ -25,11 +25,11 @@ public:
 
     void handle_event(void) override;
 
-    void enable_read(void) override;
-    void enable_write(void) override;
-    void disable_read(void) override;
-    void disable_write(void) override;
-    void disable_all(void) override;
+    int enable_read(void) override;
+    int enable_write(void) override;
+    int disable_read(void) override;
+    int disable_write(void) override;
+    int disable_all(void) override;
     bool is_writing(void) override;
 
     int get_fd(void) override {return _fd;}
@@ -40,7 +40,7 @@ public:
     uint32_t get_events_received(void) override {return _events_received;}
 
 private:
-    void update_poll_cfg(void);
+    int update_poll_cfg(void);
 
     const int  _fd;
     std::string _name;
