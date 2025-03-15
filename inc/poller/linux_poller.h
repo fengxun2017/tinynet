@@ -1,22 +1,18 @@
-// io_poller.h
-#ifndef _TINYNET_IO_POLLER_H_
-#define _TINYNET_IO_POLLER_H_
+#ifndef _TINYNET_LINUX_POLLER_H_
+#define _TINYNET_LINUX_POLLER_H_
 
 #include <vector>
-#include <unordered_map>
-#include "io_poller_interface.h"
 #include "poller_interface.h"
-#include <memory>
+#include "io_channel_interface.h"
 
 namespace tinynet
 {
 
-class IoPoller final : public IoPollerInterface
+class LinuxPoller : public PollerInterface
 {
 public:
-    IoPoller(void);
-
-    ~IoPoller() override;
+    LinuxPoller(void);
+    ~LinuxPoller() override;
 
     int poll(int timeout_ms, IoChannels &active_channels) override;
     int add_channel(IoChannelInterface &channel) override;
@@ -24,9 +20,12 @@ public:
     int update_channel(IoChannelInterface &channel) override;
 
 private:
-    std::unique_ptr<PollerInterface> _poller;
+    int cfg_channel(int op, IoChannelInterface &channel);
+
+    int _poll_fd;
+    std::vector<struct epoll_event> _event_wait;
 };
 
 }  // namespace tinynet
 
-#endif  // _TINYNET_IO_POLLER_H_
+#endif  // _TINYNET_LINUX_POLLER_H_
