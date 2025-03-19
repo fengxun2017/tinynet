@@ -6,7 +6,7 @@ namespace tinynet
 
 std::unique_ptr<PollerInterface> PollerFactory::create_poller()
 {
-    // 根据需要创建具体的 Poller 实例，这里假设只支持 Linux
+    // only support linux
     return std::make_unique<LinuxPoller>();
 }
 

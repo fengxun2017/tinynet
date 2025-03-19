@@ -10,7 +10,7 @@ void Can::write_data(uint32_t can_id, const void* buffer, size_t length)
 
 bool Can::bind(std::string canif)
 {
-    return _socket.bind_socket(canif, 0);
+    return _socket.bind(canif, 0);
 }
 
 

@@ -58,7 +58,7 @@ bool TcpConnector::connect(const std::string& server_ip, int server_port)
     // 而 reset 操作又会走当前_connector_socket的析构函数（里面有关闭套接字操作），导致新创建的IoSocket的套接字被关闭了。
     // 根因在于一个 socket，同时在多个模块中被管理，且相互不感知。
     _connector_socket.reset(new IoSocket(_name + ":socket_" + std::to_string(create_index++), IoSocket::TCP));
-    state = _connector_socket->connect_socket((struct sockaddr*)&server_addr, addrlen);
+    state = _connector_socket->connect((struct sockaddr*)&server_addr, addrlen);
     /* 
        Currently, only non-blocking sockets are used. 
        Therefore, you need to obtain the error judgment status

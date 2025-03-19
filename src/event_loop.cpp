@@ -25,7 +25,6 @@ EventLoop::EventLoop(void)
     : _quit(false),
     _poller(std::make_shared<IoPoller>()),
     _poller_wakeup(std::make_unique<PollerWakeup>(_poller, "eventloop_wakeup"))
-
 {
     _thread_id = std::this_thread::get_id();
     LOG(DEBUG) << "event loop created in thread:" << _thread_id << std::endl;

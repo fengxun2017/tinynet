@@ -30,13 +30,13 @@ TcpAcceptor::~TcpAcceptor()
 
 bool TcpAcceptor::start() 
 {
-    if (!_acceptor_socket.bind_socket(_ip, _port)) {
+    if (!_acceptor_socket.bind(_ip, _port)) {
         std::cerr << "Failed to bind socket to " << _ip << ":" << _port << std::endl;
         return false;
     }
     LOG(DEBUG) << "bind to [" << _ip << ":" << _port << "] success" << std::endl;
 
-    if (!_acceptor_socket.listen_socket()) {
+    if (!_acceptor_socket.listen()) {
         std::cerr << "Failed to listen on socket" << std::endl;
         return false;
     }
@@ -62,7 +62,7 @@ void TcpAcceptor::accept_connection(void)
     // socklen_t client_len = sizeof(client_addr);
     std::string client_ip = "UNKNOW";
     int client_port = 0;
-    int client_sockfd = _acceptor_socket.accept_socket(client_ip, client_port);
+    int client_sockfd = _acceptor_socket.accept(client_ip, client_port);
 
     if (check_fd(client_sockfd))
     {
