@@ -172,6 +172,11 @@ void TcpConnection::handle_onmessage(void)
 void TcpConnection::handle_disconnected(void)
 {
     disable_conn();
+
+    if (nullptr != _disconected_cb)
+    {
+        _disconected_cb(shared_from_this());
+    }
 }
 
 void TcpConnection::handle_write_complete(void)
@@ -209,11 +214,5 @@ void TcpConnection::disable_conn(void)
 {
     _channel.disable_all();
     close();
-
-    // FIXME: Perhaps callbacks shouldn't be called in this context
-    if (nullptr != _disconected_cb)
-    {
-        _disconected_cb(shared_from_this());
-    }
 }
 } // tinynet

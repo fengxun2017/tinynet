@@ -8,6 +8,7 @@
 #include <linux/can.h>
 #include <sys/types.h>
 #include <net/if.h>
+#include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <linux/can/raw.h>
 
@@ -16,7 +17,6 @@ namespace tinynet
 
 IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
 {
-    int opt = 1;
     _protocol = protocol;
     _sockfd = -1;
 
@@ -29,11 +29,39 @@ IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
         if (TCP == _protocol) 
         {
             _sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+            // enable SO_KEEPALIVE
+            int optval = 1;
+            if (setsockopt(_sockfd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
+                LOG(ERROR) << "socket: "<< _name << " Failed to set SO_KEEPALIVE, error info:" << error_to_str(errno) << std::endl;
+            }
+
+            // The probe packet is sent after 5 seconds of idleness
+            int keepIdle = 5;
+            if (setsockopt(_sockfd, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(keepIdle)) < 0) {
+                LOG(ERROR) << "socket: "<< _name << " Failed to set TCP_KEEPIDLE, error info:" << error_to_str(errno) << std::endl;
+            }
+
+            // A probe packet is sent every 5 seconds
+            int keepInterval = 2; 
+            if (setsockopt(_sockfd, IPPROTO_TCP, TCP_KEEPINTVL, &keepInterval, sizeof(keepInterval)) < 0) {
+                LOG(ERROR) << "socket: "<< _name << " Failed to set TCP_KEEPINTVL, error info:" << error_to_str(errno) << std::endl;
+            }
+
+            // A maximum of 5 probe packets can be sent
+            int keepCount = 3; 
+            if (setsockopt(_sockfd, IPPROTO_TCP, TCP_KEEPCNT, &keepCount, sizeof(keepCount)) < 0) {
+                LOG(ERROR) << "socket: "<< _name << " Failed to set TCP_KEEPCNT, error info:" << error_to_str(errno) << std::endl;
+            }
+
+            int opt = 1;
+            if (setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+            {
+                LOG(ERROR) << "socket: "<< _name << " Failed to set SO_REUSEADDR, error info:" << error_to_str(errno) << std::endl;
+            }
         } 
         else if (UDP == _protocol) {
             _sockfd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         }
-        setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     }
 
     if (_sockfd < 0) {

@@ -1,6 +1,7 @@
 #ifndef _TINYNET_TCP_CLIENT_H_
 #define _TINYNET_TCP_CLIENT_H_
 
+#include <mutex>
 #include <string>
 #include "event_loop.h"
 #include "tcp_connection.h"
@@ -16,11 +17,13 @@ public:
     using TcpClientOnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
     using TcpClientWriteCompleteCb = std::function<void(TcpConnPtr&)>;
 
-    TcpClient(EventLoop *event_loop, std::string client_name);
+    TcpClient(EventLoop *event_loop, const std::string &client_name);
 
     ~TcpClient();
 
     bool connect(std::string server_ip, int server_port);
+    void disconnect(void);
+    void write_data(const void *buffer, size_t size);
 
     void set_newconn_cb(TcpClientNewConnCb newconn_cb) {
         _newconn_cb = newconn_cb;
@@ -38,6 +41,7 @@ public:
     void set_write_complete_cb(TcpClientWriteCompleteCb write_complete_cb) {
         _write_complete_cb = write_complete_cb;
     }
+
 private:
 
     void handle_new_connection(TcpConnPtr conn);
@@ -54,6 +58,7 @@ private:
     EventLoop *_event_loop;
     TcpConnector _connector;
     TcpConnPtr _conn= nullptr;
+    std::mutex  _conn_mutex;
     TcpClientNewConnCb _newconn_cb = nullptr;
     TcpClientDisconnectedCb _disconnected_cb = nullptr;
     TcpClientOnMessageCb _on_message_cb = nullptr;

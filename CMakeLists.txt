@@ -22,4 +22,4 @@ target_compile_definitions(netlib PRIVATE TINYNET_DEBUG)
 # target_compile_definitions(netlib PRIVATE DISABLE_LOG)
 
 # 设置库输出目录
-set_target_properties(netlib PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
+# set_target_properties(netlib PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/lib)

@@ -19,6 +19,7 @@ EventLoop::EventLoop(void)
     _thread_id = std::this_thread::get_id();
     LOG(DEBUG) << "event loop created in thread:" << _thread_id << std::endl;
     _channel.set_reab_callback(std::bind(&EventLoop::handle_recv, this));
+    _channel.enable_read();
 }
 
 void EventLoop::handle_recv(void)
@@ -69,9 +70,11 @@ void EventLoop::run_in_loop(RunInLoopCallBack cb, std::string obj_desc)
     else
     {
         LOG(DEBUG) << obj_desc << " will run in thread: " << _thread_id << std::endl;
-        std::lock_guard<std::mutex> lock(_pending_array_mutex);
-        _pending_cb_array.push_back(cb);
-
+        {
+            std::lock_guard<std::mutex> lock(_pending_array_mutex);
+            _pending_cb_array.push_back(cb);
+        }
+        
         if(!is_in_loop_thread())
         {
             wakeup_loop();
@@ -90,7 +93,7 @@ void EventLoop::exec_pending_cb(void)
 
     for (auto &cb : tmp_array)
     {
-        LOG(DEBUG) << "in thrad: " << _thread_id << " exec pending function" << std::endl;
+        LOG(DEBUG) << "in thread: " << _thread_id << " exec pending function" << std::endl;
         cb();
     }
 }
