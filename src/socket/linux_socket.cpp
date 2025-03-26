@@ -9,12 +9,13 @@
 #include <linux/can/raw.h>
 #include <netinet/tcp.h>
 #include "linux_socket.h"
+#include "socket_interface.h"
 #include "tinynet_util.h"
 #include "logging.h"
 namespace tinynet
 {
 
-LinuxSocket::LinuxSocket(const std::string &name,  Protocol protocol)
+LinuxSocket::LinuxSocket(const std::string &name,  Protocol protocol, int fd)
 : _name(name), _protocol(protocol), _sockfd(-1)
 {
     int domain = -1;
@@ -22,26 +23,34 @@ LinuxSocket::LinuxSocket(const std::string &name,  Protocol protocol)
     int proto = 0;
     int opt = 1;
 
-    if (CAN == _protocol)
+    if (fd < 0)
     {
-        domain = AF_CAN;
-        type = SOCK_RAW;
-        proto = CAN_RAW;
+        if (CAN == _protocol)
+        {
+            domain = AF_CAN;
+            type = SOCK_RAW;
+            proto = CAN_RAW;
+        }
+        else
+        {
+            if (TCP == _protocol) 
+            {
+                domain = AF_INET;
+                type = SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC;
+            } 
+            else if (UDP == _protocol) {
+                domain = AF_INET;
+                type = SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC;
+            }
+
+        }
+        _sockfd = socket(domain, type, protocol);
     }
     else
     {
-        if (TCP == _protocol) 
-        {
-            domain = AF_INET;
-            type = SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC;
-        } 
-        else if (UDP == _protocol) {
-            domain = AF_INET;
-            type = SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC;
-        }
-
+        _sockfd = fd;
     }
-    _sockfd = socket(domain, type, protocol);
+    
     if (_sockfd < 0)
     {
         LOG(ERROR) << "socket create failed, error info:" << error_to_str(errno) << std::endl;
@@ -50,7 +59,8 @@ LinuxSocket::LinuxSocket(const std::string &name,  Protocol protocol)
 
     if (TCP == _protocol) 
     {
-        // enable SO_KEEPALIVE
+        // Setting SO_KEEPALIVE for server-side listening sockets has no effect, 
+        // as SO_KEEPALIVE is a feature for sockets that have already established connections
         int optval = 1;
         if (setsockopt(_sockfd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval)) < 0) {
             LOG(ERROR) << "socket: "<< _name << " Failed to set SO_KEEPALIVE, error info:" << error_to_str(errno) << std::endl;
@@ -74,6 +84,8 @@ LinuxSocket::LinuxSocket(const std::string &name,  Protocol protocol)
             LOG(ERROR) << "socket: "<< _name << " Failed to set TCP_KEEPCNT, error info:" << error_to_str(errno) << std::endl;
         }
 
+        // This feature is generally used for server-side sockets and takes effect in the bind phase. 
+        // For client-side sockets, if the bind function is not used, setting this feature has no effect
         int opt = 1;
         if (setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
         {
@@ -141,15 +153,19 @@ bool LinuxSocket::bind(const std::string& self_ip, int self_port)
 
 bool LinuxSocket::listen(int backlog) 
 {
-    bool ret = true;
+    bool ret = false;
 
     if (_protocol == Protocol::TCP)
     {
-        if (::listen(_sockfd, backlog) < 0)
+        if (::listen(_sockfd, backlog) == 0)
+        {
+            ret = true;
+        }
+        else
         {
             LOG(ERROR) << "listen failed, err info:" << error_to_str(errno);
-            ret = false;
         }
+        
     }
 
     return ret;
@@ -189,11 +205,7 @@ int LinuxSocket::connect(struct sockaddr* addr, socklen_t addrlen)
 
 ssize_t LinuxSocket::write_data(const void* buffer, size_t length) 
 {
-    if (_protocol == Protocol::TCP)
-    {
-        return send(_sockfd, buffer, length, 0);
-    }
-    return -1;
+    return ::write(_sockfd, buffer, length);
 }
 
 ssize_t LinuxSocket::write_can_data(uint32_t can_id, const void* buffer, size_t length) 
@@ -224,7 +236,7 @@ ssize_t LinuxSocket::read_data(void* buffer, size_t length)
 {
     ssize_t ret = -1;
     if (_protocol == Protocol::TCP) {
-        ret = recv(_sockfd, buffer, length, 0);
+        ret = ::read(_sockfd, buffer, length);
     }
 
     return ret;
@@ -233,6 +245,11 @@ ssize_t LinuxSocket::read_data(void* buffer, size_t length)
 int LinuxSocket::get_fd() const 
 {
     return _sockfd;
+}
+
+SocketInterface::Protocol LinuxSocket::get_protocol() const
+{
+    return _protocol;
 }
 
 int LinuxSocket::get_socket_error() 
@@ -254,6 +271,7 @@ void LinuxSocket::close()  {
     {
         ::close(_sockfd);
         _sockfd = -1;
+        LOG(DEBUG) << "socket:"<< _name << " has been closed." << std::endl;
     }
 }
 

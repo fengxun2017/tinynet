@@ -42,7 +42,7 @@ public:
 
     bool is_in_loop_thread(void) {return std::this_thread::get_id() == _thread_id;}
 
-    void run_in_loop(RunInLoopCallBack cb, std::string obj_desc);
+    void run_in_loop(const RunInLoopCallBack &cb, std::string obj_desc);
     
 private:
     void exec_pending_cb(void);

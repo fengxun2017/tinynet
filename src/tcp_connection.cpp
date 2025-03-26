@@ -1,11 +1,13 @@
 #include <cassert>
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <thread>
 #include <unistd.h>
 #include <errno.h>
+#include "io_channel.h"
 #include "tcp_connection.h"
 #include "logging.h"
 #include "event_loop.h"
@@ -13,45 +15,39 @@
 namespace tinynet
 {
 
-TcpConnection::TcpConnection(int sockfd, const std::string& client_ip, int client_port,
+TcpConnection::TcpConnection(std::unique_ptr<IoSocket> socket, const std::string& client_ip, int client_port,
                 const std::string& server_ip, int server_port,
                 EventLoop *event_loop, std::string name)
     : _name(name),
-      _sockfd(sockfd),
+      _socket(std::move(socket)),
       _client_ip(client_ip),
       _client_port(client_port),
       _server_ip(server_ip),
       _server_port(server_port),
-      _channel(sockfd, event_loop->get_poller(), _name + ":channel"),
       _read_data_buffer(4096),
       _state(TCP_CONNECTED),
       _write_data_buffer(4096),
       _event_loop(event_loop)
 {
-    _channel.set_read_callback(std::bind(&TcpConnection::handle_onmessage, this));
-    _channel.set_write_callback(std::bind(&TcpConnection::handle_write_complete, this));
-    _channel.set_close_callback(std::bind(&TcpConnection::handle_disconnected, this));
+    _channel = std::make_unique<IoChannel>(_socket->get_fd(), event_loop->get_poller(), _name + ":channel"),
+
+    _channel->set_read_callback(std::bind(&TcpConnection::handle_onmessage, this));
+    _channel->set_write_callback(std::bind(&TcpConnection::handle_write_complete, this));
+    _channel->set_close_callback(std::bind(&TcpConnection::handle_disconnected, this));
 
     LOG(DEBUG) << "TcpConnection created: " << _name << std::endl;
 }
 
 TcpConnection::~TcpConnection() 
 {
-    if (check_fd(_sockfd))
-    {
-        close();
-    }
+    _socket->close();
     LOG(DEBUG) << "connection: " <<_name << " has been destructed." << std::endl;
 }
 
 void TcpConnection::close() 
 {
-    if (check_fd(_sockfd))
-    {
-        LOG(INFO) << "close " << _name << " socket fd=" << _sockfd << std::endl;
-        ::close(_sockfd);
-        _sockfd = -1;
-    }
+    LOG(INFO) << "close connection:" << _name << std::endl;
+    _socket->close();
 }
 
 void TcpConnection::write_data(const void *buffer, size_t size)
@@ -66,9 +62,11 @@ void TcpConnection::write_data(const void *buffer, size_t size)
         else
         {
             uint8_t *pbuffer = (uint8_t *)buffer;
-            auto bind_func = std::bind(static_cast<void (TcpConnection::*)(std::vector<uint8_t>&)>(&TcpConnection::write_data_in_loop),
+            auto arg = std::vector<uint8_t>(pbuffer, pbuffer + size);
+            auto bind_func = std::bind(static_cast<void (TcpConnection::*)(const std::vector<uint8_t>&)>(&TcpConnection::write_data_in_loop),
                     this,
-                    std::vector<uint8_t>(pbuffer, pbuffer + size));
+                    std::move(arg));
+
             _event_loop->run_in_loop(
                 bind_func,
                 "write_data_in_loop(vector<uint8_t>)");
@@ -79,7 +77,7 @@ void TcpConnection::write_data(const void *buffer, size_t size)
         LOG(ERROR) << "_event_loop is null in TcpConnection::write_data_in_loop" << std::endl;
     }
 }
-void TcpConnection::write_data_in_loop(std::vector<uint8_t> &data_buffer)
+void TcpConnection::write_data_in_loop(const std::vector<uint8_t> &data_buffer)
 {
 
     if (nullptr != _event_loop)
@@ -90,7 +88,7 @@ void TcpConnection::write_data_in_loop(std::vector<uint8_t> &data_buffer)
         }
         else
         {
-            uint8_t *pdata = data_buffer.data();
+            const uint8_t *pdata = data_buffer.data();
             size_t size = data_buffer.size();
             write_data_in_loop(pdata, size);
         }
@@ -107,13 +105,12 @@ void TcpConnection::write_data_in_loop(const void* buffer, size_t length)
     size_t left_size = length;
     bool has_error = false;
 
-    assert(check_fd(_sockfd));
     assert(_event_loop != nullptr);
     assert(_event_loop->is_in_loop_thread());
 
-    if (!_channel.is_writing())
+    if (!_channel->is_writing() && buffer != nullptr)
     {
-        bytes_written = ::write(_sockfd, buffer, left_size);
+        bytes_written = _socket->write_data(buffer, left_size);
         if (bytes_written >= 0)
         {
             LOG(DEBUG) << _name << " send data in event_loop, size = " << bytes_written << std::endl;
@@ -140,16 +137,16 @@ void TcpConnection::write_data_in_loop(const void* buffer, size_t length)
 
         const uint8_t *pdata = static_cast<const uint8_t*>(buffer);
         _write_data_buffer.append(pdata + bytes_written, left_size);
-        if (!_channel.is_writing())
+        if (!_channel->is_writing())
         {
-            _channel.enable_write();
+            _channel->enable_write();
         }
     }
 }
 
 void TcpConnection::handle_onmessage(void)
 {
-    ssize_t bytes_read = read(_sockfd, _read_data_buffer.data(), _read_data_buffer.size());
+    ssize_t bytes_read = _socket->read_data( _read_data_buffer.data(), _read_data_buffer.size());
     LOG(DEBUG) <<_name << " recv data. " << "len=" << bytes_read << std::endl;
     if (bytes_read > 0) 
     {
@@ -171,8 +168,7 @@ void TcpConnection::handle_onmessage(void)
 
 void TcpConnection::handle_disconnected(void)
 {
-    _channel.disable_all();
-    close();
+    disable_conn();
     if (nullptr != _disconected_cb)
     {
         _disconected_cb(shared_from_this());
@@ -191,7 +187,7 @@ void TcpConnection::handle_write_complete(void)
     if(left_size > 0)
     {
         uint8_t *pbuffer = _write_data_buffer.get_read_pointer();
-        size_t bytes_written = ::write(_sockfd, pbuffer, left_size);
+        size_t bytes_written = _socket->write_data(pbuffer, left_size);
 
         if (bytes_written >= 0)
         {
@@ -205,15 +201,14 @@ void TcpConnection::handle_write_complete(void)
     }
     else
     {
-        _channel.disable_write();
+        _channel->disable_write();
         LOG(DEBUG) << "There is no more data to send, close the write completion notification event" << std::endl;
     }
 }
 
 void TcpConnection::disable_conn(void)
 {
-    _channel.disable_all();
-    // FIXME: Don't need here to close?
+    _channel->disable_all();
     close();
 }
 } // tinynet

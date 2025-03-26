@@ -9,10 +9,10 @@
 
 namespace tinynet
 {
-IoSocket::IoSocket(const std::string &name, Protocol protocol) 
+IoSocket::IoSocket(const std::string &name, Protocol protocol, int fd) 
 : _name(name)
 {
-    _socket = SocketFactory::create_socket(name, protocol); 
+    _socket = SocketFactory::create_socket(name, protocol, fd); 
 }
 
 IoSocket::~IoSocket() {

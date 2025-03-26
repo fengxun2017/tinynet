@@ -10,7 +10,7 @@ namespace tinynet
 
 class LinuxSocket : public SocketInterface {
 public:
-    LinuxSocket(const std::string &name,  Protocol protocol);
+    LinuxSocket(const std::string &name,  Protocol protocol, int fd = -1);
     ~LinuxSocket() override;
 
     bool bind(const std::string& self_ip, int self_port) override;
@@ -21,6 +21,7 @@ public:
     ssize_t write_can_data(uint32_t can_id, const void* buffer, size_t length) override;
     ssize_t read_data(void* buffer, size_t length) override;
     int get_fd() const override;
+    Protocol get_protocol() const override;
     int get_socket_error() override;
     void close() override;
 

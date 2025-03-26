@@ -27,7 +27,7 @@ using TcpConnPtr = std::shared_ptr<TcpConnection>;
 class TcpConnection : public std::enable_shared_from_this<TcpConnection>
 {
 public:
-    TcpConnection(int sockfd, const std::string& client_ip, int client_port,
+    TcpConnection(std::unique_ptr<IoSocket> socket, const std::string& client_ip, int client_port,
                 const std::string& server_ip, int server_port,
                 EventLoop *event_loop, std::string name);
 
@@ -37,15 +37,15 @@ public:
     void set_disconnected_cb(std::function<void(TcpConnPtr)> disconected_cb) {_disconected_cb = disconected_cb;}
     void set_onmessage_cb(std::function<void(TcpConnPtr, const uint8_t *, size_t )> on_message_cb) {_on_message_cb = on_message_cb;}
     void set_write_complete_cb(std::function<void(TcpConnPtr)> write_complete_cb) { _write_complete_cb = write_complete_cb;}
-    int get_fd(void) {return _channel.get_fd();}
+    int get_fd(void) {return _channel->get_fd();}
 
     std::string get_client_ip(void) { return _client_ip;}
     int get_client_port(void) {return _client_port;}
 
     std::string get_name(void) {return _name;}
 
-    void enable_read(void) {_channel.enable_read();}
-    void enable_write(void) {_channel.enable_write();}
+    void enable_read(void) {_channel->enable_read();}
+    void enable_write(void) {_channel->enable_write();}
     void disable_conn(void);
 
     void set_context(const std::any &context) { _context = context; }
@@ -55,7 +55,7 @@ public:
     std::any &get_context2()  { return _context2; }
 
 private:
-    void write_data_in_loop(std::vector<uint8_t> &data_buffer);
+    void write_data_in_loop(const std::vector<uint8_t> &data_buffer);
     void write_data_in_loop(const void* buffer, size_t length);
 
     void handle_onmessage(void);
@@ -64,12 +64,12 @@ private:
     void close(void);
 
     std::string _name;
-    int _sockfd;
+    std::unique_ptr<IoSocket> _socket;
     std::string _client_ip;
     int _client_port;
     std::string _server_ip;
     int _server_port;
-    IoChannel _channel;
+    std::unique_ptr<IoChannel> _channel;
     std::vector<uint8_t> _read_data_buffer;
     TcpConnState _state;
     std::any _context;

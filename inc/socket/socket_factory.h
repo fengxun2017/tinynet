@@ -9,7 +9,7 @@ namespace tinynet
 
 class SocketFactory {
 public:
-    static std::unique_ptr<SocketInterface> create_socket(const std::string &name, SocketInterface::Protocol protocol);
+    static std::unique_ptr<SocketInterface> create_socket(const std::string &name, SocketInterface::Protocol protocol, int fd=-1);
 };
 
 }  // namespace tinynet

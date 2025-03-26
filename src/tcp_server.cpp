@@ -1,6 +1,8 @@
+#include <memory>
 #include <string>
 #include <utility>
 #include <sstream>
+#include "io_socket.h"
 #include "logging.h"
 #include "tcp_server.h"
 
@@ -81,7 +83,8 @@ void TcpServer::handle_new_connection(int sockfd, const std::string& client_ip, 
             std::string conn_name = std::move(oss.str());
 
             EventLoop *event_loop = _event_loop_pool.get_next_loop();
-            TcpConnPtr new_conn = std::make_shared<TcpConnection>(sockfd, client_ip, client_port, _ip, _port, event_loop, conn_name);
+            auto socket = std::make_unique<IoSocket>(conn_name + ":socket", IoSocket::TCP, sockfd);
+            TcpConnPtr new_conn = std::make_shared<TcpConnection>(std::move(socket), client_ip, client_port, _ip, _port, event_loop, conn_name);
 
             _connections.emplace(std::make_pair(new_conn->get_fd(), new_conn));
             new_conn->set_disconnected_cb(std::bind(&TcpServer::handle_disconnected, this, std::placeholders::_1));

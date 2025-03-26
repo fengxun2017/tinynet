@@ -53,6 +53,10 @@ IoChannel::IoChannel(int fd, std::shared_ptr<IoPollerInterface> poller, std::str
 
 IoChannel::~IoChannel()
 {
+    if (_events_interested != 0 )
+    {
+        disable_all();
+    }
     LOG(DEBUG) << _name << " has been destructed." << std::endl;
 }
 

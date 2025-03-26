@@ -4,10 +4,10 @@
 
 namespace tinynet
 {
-std::unique_ptr<SocketInterface> SocketFactory::create_socket(const std::string &name, SocketInterface::Protocol protocol)
+std::unique_ptr<SocketInterface> SocketFactory::create_socket(const std::string &name, SocketInterface::Protocol protocol, int fd)
 {
     // only support linux
-    return std::make_unique<LinuxSocket>(name, protocol);
+    return std::make_unique<LinuxSocket>(name, protocol, fd);
 }
 
 }  // namespace tinynet

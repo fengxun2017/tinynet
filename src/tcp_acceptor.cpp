@@ -58,8 +58,6 @@ void TcpAcceptor::close()
 void TcpAcceptor::accept_connection(void)
 {
     TcpConnPtr new_conn = nullptr;
-    // struct sockaddr_in client_addr;
-    // socklen_t client_len = sizeof(client_addr);
     std::string client_ip = "UNKNOW";
     int client_port = 0;
     int client_sockfd = _acceptor_socket.accept(client_ip, client_port);

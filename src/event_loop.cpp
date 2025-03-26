@@ -30,11 +30,11 @@ EventLoop::EventLoop(void)
     LOG(DEBUG) << "event loop created in thread:" << _thread_id << std::endl;
 }
 
-void EventLoop::run_in_loop(RunInLoopCallBack cb, std::string obj_desc)
+void EventLoop::run_in_loop(const RunInLoopCallBack &cb, std::string obj_desc)
 {
     if (is_in_loop_thread())
     {
-        LOG(DEBUG) << obj_desc << " runs directly in the current thread." << std::endl;
+        LOG(DEBUG) << obj_desc << " runs directly in the current thread:" << _thread_id << std::endl;
         cb();
     }
     else

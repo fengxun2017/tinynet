@@ -35,12 +35,13 @@ void TcpConnector::connecting(void)
 
 bool TcpConnector::connect(const std::string& server_ip, int server_port)
 {
-    bool ret;
+    bool ret = false;
     struct sockaddr_in server_addr;
     socklen_t addrlen = sizeof(server_addr);
     int _errno;
     static int create_index = 0;
 
+    //FIXME: Encapsulation of operations related to network addresses
     _server_ip = server_ip;
     _server_port = server_port;
     memset(&server_addr, 0, sizeof(server_addr));
@@ -54,9 +55,7 @@ bool TcpConnector::connect(const std::string& server_ip, int server_port)
                 << "or af does not contain a valid address family." << std::endl;
         return false;
     }
-    // FIXME: 当上一次正常的连接断开时（在tcpconnection的断开处理中关闭了套接字），如果又重新发起连接。则这里的new 创建IoSocket时，会拿到被关闭的套接字。
-    // 而 reset 操作又会走当前_connector_socket的析构函数（里面有关闭套接字操作），导致新创建的IoSocket的套接字被关闭了。
-    // 根因在于一个 socket，同时在多个模块中被管理，且相互不感知。
+
     _connector_socket.reset(new IoSocket(_name + ":socket_" + std::to_string(create_index++), IoSocket::TCP));
     state = _connector_socket->connect((struct sockaddr*)&server_addr, addrlen);
     /* 
@@ -128,7 +127,7 @@ void TcpConnector::handle_write_complete(void)
         oss << "[" << local_ip << ":" << local_port << "<->"
                 <<  peer_ip << ":" << peer_port << "]";
         std::string conn_name = std::move(oss.str());
-        new_conn = std::make_shared<TcpConnection>(_connector_socket->get_fd(), 
+        new_conn = std::make_shared<TcpConnection>(std::move(_connector_socket), 
                 local_ip, local_port, peer_ip, peer_port, _event_loop, conn_name);
 
         if (_newconn_cb)
