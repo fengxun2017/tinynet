@@ -20,6 +20,7 @@ public:
     virtual ssize_t write_can_data(uint32_t can_id, const void* buffer, size_t length) = 0;
     virtual ssize_t read_data(void* buffer, size_t length) = 0;
     virtual int get_fd() const = 0;
+    virtual Protocol get_protocol() const = 0;
     virtual int get_socket_error() = 0;
     virtual void close() = 0;
 };

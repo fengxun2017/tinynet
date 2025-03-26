@@ -25,6 +25,8 @@ public:
     ssize_t write_can_data(uint32_t can_id, const void* buffer, size_t length) override;
     ssize_t read_data(void* buffer, size_t length) override;
     int get_fd() const override  {return _socket->get_fd();}
+    Protocol get_protocol() const override {return _socket->get_protocol();}
+
     int get_socket_error() override;
     void close() override;
 

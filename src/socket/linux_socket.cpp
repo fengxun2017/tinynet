@@ -9,6 +9,7 @@
 #include <linux/can/raw.h>
 #include <netinet/tcp.h>
 #include "linux_socket.h"
+#include "socket_interface.h"
 #include "tinynet_util.h"
 #include "logging.h"
 namespace tinynet
@@ -141,15 +142,19 @@ bool LinuxSocket::bind(const std::string& self_ip, int self_port)
 
 bool LinuxSocket::listen(int backlog) 
 {
-    bool ret = true;
+    bool ret = false;
 
     if (_protocol == Protocol::TCP)
     {
-        if (::listen(_sockfd, backlog) < 0)
+        if (::listen(_sockfd, backlog) == 0)
+        {
+            ret = true;
+        }
+        else
         {
             LOG(ERROR) << "listen failed, err info:" << error_to_str(errno);
-            ret = false;
         }
+        
     }
 
     return ret;
@@ -233,6 +238,11 @@ ssize_t LinuxSocket::read_data(void* buffer, size_t length)
 int LinuxSocket::get_fd() const 
 {
     return _sockfd;
+}
+
+SocketInterface::Protocol LinuxSocket::get_protocol() const
+{
+    return _protocol;
 }
 
 int LinuxSocket::get_socket_error() 
