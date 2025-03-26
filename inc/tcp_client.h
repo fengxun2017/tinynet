@@ -21,7 +21,7 @@ public:
 
     ~TcpClient();
 
-    bool connect(std::string server_ip, int server_port);
+    bool connect(const std::string &server_ip, int server_port);
     void disconnect(void);
     void write_data(const void *buffer, size_t size);
 

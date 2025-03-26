@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <functional>
 #include <mutex>
 #include <sys/epoll.h>
@@ -14,6 +15,7 @@ TcpClient::TcpClient(EventLoop *event_loop, const std::string &client_name) :
     _connector(event_loop, client_name + ":connector")
 {
     _connector.set_newconn_cb(std::bind(&TcpClient::handle_new_connection, this, std::placeholders::_1));
+    _connector.set_disconnected_cb(std::bind(&TcpClient::handle_disconnected, this, std::placeholders::_1));
 
     LOG(DEBUG) << "client:" << _name << " has been created" << std::endl;
 }
@@ -51,7 +53,7 @@ void TcpClient::write_data(const void *buffer, size_t size)
     }
 }
 
-bool TcpClient::connect(std::string server_ip, int server_port)
+bool TcpClient::connect(const std::string& server_ip, int server_port)
 {
     bool ret = false;
 

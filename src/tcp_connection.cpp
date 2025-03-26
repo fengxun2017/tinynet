@@ -48,7 +48,7 @@ void TcpConnection::close()
 {
     if (check_fd(_sockfd))
     {
-        LOG(INFO) << "close " << _name << " socket fd" << std::endl;
+        LOG(INFO) << "close " << _name << " socket fd=" << _sockfd << std::endl;
         ::close(_sockfd);
         _sockfd = -1;
     }
@@ -171,8 +171,8 @@ void TcpConnection::handle_onmessage(void)
 
 void TcpConnection::handle_disconnected(void)
 {
-    disable_conn();
-
+    _channel.disable_all();
+    close();
     if (nullptr != _disconected_cb)
     {
         _disconected_cb(shared_from_this());
@@ -213,6 +213,7 @@ void TcpConnection::handle_write_complete(void)
 void TcpConnection::disable_conn(void)
 {
     _channel.disable_all();
+    // FIXME: Don't need here to close?
     close();
 }
 } // tinynet

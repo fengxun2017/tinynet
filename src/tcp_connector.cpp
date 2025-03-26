@@ -1,8 +1,11 @@
+#include <cstddef>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sstream>
+#include <unistd.h>
+#include "io_socket.h"
 #include "tcp_connector.h"
 #include "logging.h"
 #include "tinynet_util.h"
@@ -12,10 +15,7 @@ namespace tinynet
 
 
 TcpConnector::TcpConnector(EventLoop *event_loop, std::string name)
-    : _name(name),
-    _connector_socket(_name + ":socket", IoSocket::TCP),
-    _event_loop(event_loop),
-    _channel(_connector_socket.get_fd(), event_loop->get_poller(), _name + ":channel")
+    : _name(name),_event_loop(event_loop)
 {
     LOG(DEBUG) << _name << " created" << std::endl;
 }
@@ -25,12 +25,21 @@ TcpConnector::~TcpConnector()
     LOG(DEBUG) << _name << "destructed" << std::endl;
 }
 
-bool TcpConnector::connect(std::string& server_ip, int server_port)
+void TcpConnector::connecting(void)
+{
+    _channel.reset(new IoChannel(_connector_socket->get_fd(), _event_loop->get_poller(), _name + ":channel"));
+    // NOTE: If there is no NIC available, a writable event will be triggered only after 2 minutes for the connection failure to be detected.
+    _channel->set_write_callback(std::bind(&TcpConnector::handle_write_complete, this));
+    _channel->enable_write();
+}
+
+bool TcpConnector::connect(const std::string& server_ip, int server_port)
 {
     bool ret;
     struct sockaddr_in server_addr;
     socklen_t addrlen = sizeof(server_addr);
     int _errno;
+    static int create_index = 0;
 
     _server_ip = server_ip;
     _server_port = server_port;
@@ -45,27 +54,30 @@ bool TcpConnector::connect(std::string& server_ip, int server_port)
                 << "or af does not contain a valid address family." << std::endl;
         return false;
     }
-
-    state = _connector_socket.connect_socket((struct sockaddr*)&server_addr, addrlen);
+    // FIXME: 当上一次正常的连接断开时（在tcpconnection的断开处理中关闭了套接字），如果又重新发起连接。则这里的new 创建IoSocket时，会拿到被关闭的套接字。
+    // 而 reset 操作又会走当前_connector_socket的析构函数（里面有关闭套接字操作），导致新创建的IoSocket的套接字被关闭了。
+    // 根因在于一个 socket，同时在多个模块中被管理，且相互不感知。
+    _connector_socket.reset(new IoSocket(_name + ":socket_" + std::to_string(create_index++), IoSocket::TCP));
+    state = _connector_socket->connect_socket((struct sockaddr*)&server_addr, addrlen);
     /* 
        Currently, only non-blocking sockets are used. 
        Therefore, you need to obtain the error judgment status
     */
     _errno = (state == 0) ? 0 : errno;
-    LOG(DEBUG) << _name << " connect return state:" << _errno << std::endl;
+    LOG(DEBUG) << _name << " connect return state:" << _errno << "{" << errno_str(_errno) << "}" << std::endl;
     switch (_errno)
     {
         case 0:
+        case EISCONN:
         case EINPROGRESS:
-            _channel.set_write_callback(std::bind(&TcpConnector::handle_write_complete, this));
-            _channel.enable_write();
+            connecting();
             ret = true;
             break;
 
         default:
+            _connector_socket->close();
             ret = false;
-            LOG(ERROR) << _name << " connect to [" << server_ip << ":" << server_port << "] failed, err info:" << error_to_str(errno);
-            _connector_socket.close();
+            LOG(ERROR) << _name << " connect to [" << server_ip << ":" << server_port << "] failed, err info:" << error_to_str(errno) << std::endl;
             break;
     }
     return ret;
@@ -86,17 +98,17 @@ void TcpConnector::handle_write_complete(void)
     socklen_t peer_addr_len = sizeof(struct sockaddr_in);
 
     LOG(DEBUG) << _name << " handle_write_complete" << std::endl;
-    _channel.disable_write();
+    _channel->disable_write();
 
     /* After epoll indicates writability, use getsockopt to read the SO_ERROR option at level SOL_SOCKET to determine whether
         connect() completed successfully (SO_ERROR is zero) or unsuccessfully 
     */
-    ret = _connector_socket.get_socket_error();
+    ret = _connector_socket->get_socket_error();
     if ( 0 == ret) 
     {
         // connect success
         LOG(DEBUG) << _name << " connect success." << std::endl;
-        if (0 == getsockname(_connector_socket.get_fd(), (struct sockaddr*)&local_addr, &local_addr_len))
+        if (0 == getsockname(_connector_socket->get_fd(), (struct sockaddr*)&local_addr, &local_addr_len))
         {
             if(NULL == inet_ntop(AF_INET, &(local_addr.sin_addr.s_addr), local_ip, sizeof(local_ip)))
             {
@@ -104,7 +116,7 @@ void TcpConnector::handle_write_complete(void)
             }
             local_port = ntohs(local_addr.sin_port);
         }
-        if (0 == getpeername(_connector_socket.get_fd(), (struct sockaddr*)&peer_addr, &peer_addr_len))
+        if (0 == getpeername(_connector_socket->get_fd(), (struct sockaddr*)&peer_addr, &peer_addr_len))
         {
             if(NULL == inet_ntop(AF_INET, &(peer_addr.sin_addr.s_addr), peer_ip, sizeof(peer_ip)))
             {
@@ -116,19 +128,27 @@ void TcpConnector::handle_write_complete(void)
         oss << "[" << local_ip << ":" << local_port << "<->"
                 <<  peer_ip << ":" << peer_port << "]";
         std::string conn_name = std::move(oss.str());
-        new_conn = std::make_shared<TcpConnection>(_connector_socket.get_fd(), 
+        new_conn = std::make_shared<TcpConnection>(_connector_socket->get_fd(), 
                 local_ip, local_port, peer_ip, peer_port, _event_loop, conn_name);
 
+        if (_newconn_cb)
+        {
+            _newconn_cb(new_conn);
+        }
     } 
     else
     {
-        LOG(ERROR) << _name << " connect failed, err info: " << error_to_str(ret);
+        LOG(ERROR) << _name << " connect failed, err info: " << error_to_str(ret) << std::endl;
+        _channel->disable_all();
+        _connector_socket->close();
+
+        if (_disconnected_cb)
+        {
+            _disconnected_cb(nullptr);
+        }
     }
 
-    if (_newconn_cb)
-    {
-        _newconn_cb(new_conn);
-    }
-}
 
 }
+
+}   // tinynet

@@ -64,15 +64,20 @@ IoSocket::IoSocket(std::string name, Protocol protocol) : _name(name)
         }
     }
 
-    if (_sockfd < 0) {
+    if (_sockfd < 0)
+    {
         LOG(ERROR) << "socket: "<< _name << " create failed, error info:" << error_to_str(errno) << std::endl;
+    }
+    else
+    {
+        LOG(INFO) << "socket: "<< _name << " create success!" << "socketfd=" << _sockfd << std::endl;
     }
 }
 
 IoSocket::~IoSocket()
 {
     close();
-    LOG(DEBUG) << _name << " has been destructed.." << std::endl;
+    LOG(DEBUG) << _name << " has been destructed.." << "socketfd=" << _sockfd << std::endl;
 }
 
 void IoSocket::close(void)
@@ -80,6 +85,7 @@ void IoSocket::close(void)
     if (check_fd(_sockfd)) 
     {
         ::close(_sockfd);
+        LOG(DEBUG) << _name << " closed " << "socketfd=" << _sockfd << " reset to -1" << std::endl;
         _sockfd = -1;
     }
 }

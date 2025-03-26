@@ -15,6 +15,8 @@ const char * error_to_str (int errnum);
 
 void check_fd_nonblock(int fd);
 
+const char* errno_str(int _errno);
+
 }  // namespace tinynet
 
 #endif  // _TINYNET_UTIL_H_

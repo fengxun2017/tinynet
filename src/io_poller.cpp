@@ -92,6 +92,7 @@ int IoPoller::cfg_channel(int op, IoChannel &channel)
     {
         LOG(ERROR) << "epoll_ctl failed in IoPoller::update_channel, error info:"
                 << error_to_str(errno)
+                << " _poll_fd=" << _poll_fd << " fd=" << channel.get_fd()
                 << std::endl;
         ret = -1;
     }
