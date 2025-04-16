@@ -40,5 +40,7 @@ protected:
 TEST_F(TestWakeupPoller, TestWakeup) {
     wakeup_poller->wakeup();
     wakeup_poller->handle_recv();
+
+    // For eventfd file descriptors, both reads and writes are 8 bytes
     EXPECT_EQ(_callback_value, 8);
 }

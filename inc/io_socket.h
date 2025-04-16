@@ -14,20 +14,20 @@ class IoSocket : public SocketInterface {
 public:
     IoSocket(const std::string &name, Protocol protocol, int fd=-1);
 
-    ~IoSocket();
+    virtual ~IoSocket();
 
     bool bind(const std::string& self_ip, int self_port) override;
     bool listen(int backlog = 10) override;
     int accept(std::string& client_ip, int& client_port) override;
-    int connect(struct sockaddr* addr, socklen_t addrlen) override;
+    virtual int connect(struct sockaddr* addr, socklen_t addrlen) override;
     ssize_t write_data(const void* buffer, size_t length) override;
     /* only support for std can*/
     ssize_t write_can_data(uint32_t can_id, const void* buffer, size_t length) override;
     ssize_t read_data(void* buffer, size_t length) override;
-    int get_fd() const override  {return _socket->get_fd();}
+    virtual int get_fd() const override  {return _socket->get_fd();}
     Protocol get_protocol() const override {return _socket->get_protocol();}
 
-    int get_socket_error() override;
+    virtual int get_socket_error() override;
     void close() override;
 
 private:

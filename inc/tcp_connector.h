@@ -19,7 +19,7 @@ public:
 
     ~TcpConnector();
 
-    bool connect(const std::string &server_ip, int server_port);
+    bool connect(const std::string &server_ip, int server_port, std::unique_ptr<IoSocket> connector_socket = nullptr);
 
     void set_newconn_cb(TcpConnectorNewConnCb newconn_cb) {
         _newconn_cb = newconn_cb;

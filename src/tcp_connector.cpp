@@ -33,7 +33,7 @@ void TcpConnector::connecting(void)
     _channel->enable_write();
 }
 
-bool TcpConnector::connect(const std::string& server_ip, int server_port)
+bool TcpConnector::connect(const std::string& server_ip, int server_port, std::unique_ptr<IoSocket> connector_socket)
 {
     bool ret = false;
     struct sockaddr_in server_addr;
@@ -56,7 +56,15 @@ bool TcpConnector::connect(const std::string& server_ip, int server_port)
         return false;
     }
 
-    _connector_socket.reset(new IoSocket(_name + ":socket_" + std::to_string(create_index++), IoSocket::TCP));
+    if (connector_socket != nullptr)
+    {
+        LOG(INFO) << "debug test" << std::endl;
+        _connector_socket = std::move(connector_socket);
+    }
+    else
+    {
+        _connector_socket.reset(new IoSocket(_name + ":socket_" + std::to_string(create_index++), IoSocket::TCP));
+    }
     state = _connector_socket->connect((struct sockaddr*)&server_addr, addrlen);
     /* 
        Currently, only non-blocking sockets are used. 
