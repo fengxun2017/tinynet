@@ -15,7 +15,7 @@ namespace tinynet
 EventLoop::EventLoop(std::shared_ptr<IoPollerInterface> poller, std::unique_ptr<PollerWakeupInterface> poller_wakeup)
 {
     _quit = false;
-    _poller = std::move(poller);
+    _poller = poller;
     _poller_wakeup = std::move(poller_wakeup);
     _thread_id = std::this_thread::get_id();
     LOG(DEBUG) << "event loop created in thread:" << _thread_id << std::endl;

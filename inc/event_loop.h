@@ -31,18 +31,18 @@ public:
     */
     explicit EventLoop(std::shared_ptr<IoPollerInterface> poller, std::unique_ptr<PollerWakeupInterface> poller_wakeup);
 
-    ~EventLoop() {/*FIXME: clear-up work*/}
+    virtual ~EventLoop() {/*FIXME: clear-up work*/}
 
-    void loop();
+    virtual void loop();
 
     void quit();
 
     bool is_quit(){return _quit;}
     std::shared_ptr<IoPollerInterface> &get_poller(void) {return _poller;}
 
-    bool is_in_loop_thread(void) {return std::this_thread::get_id() == _thread_id;}
+    virtual bool is_in_loop_thread(void) {return std::this_thread::get_id() == _thread_id;}
 
-    void run_in_loop(const RunInLoopCallBack &cb, std::string obj_desc);
+    virtual void run_in_loop(const RunInLoopCallBack &cb, std::string obj_desc);
     
 private:
     void exec_pending_cb(void);

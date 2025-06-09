@@ -1,6 +1,6 @@
 #include <cstddef>
 #include <functional>
-#include <mutex>
+#include <memory>
 #include <sys/epoll.h>
 #include <arpa/inet.h>
 #include <string>
@@ -9,17 +9,25 @@
 #include "tinynet_util.h"
 namespace tinynet
 {
-TcpClient::TcpClient(EventLoop *event_loop, const std::string &client_name) :
-    _name(client_name), 
-    _event_loop(event_loop),
-    _connector(event_loop, client_name + ":connector")
+TcpClient::TcpClient(EventLoop* event_loop, 
+            const std::string& client_name,
+            std::unique_ptr<TcpConnector> connector)
+    : _name(client_name), 
+    _event_loop(event_loop)
 {
-    _connector.set_newconn_cb(std::bind(&TcpClient::handle_new_connection, this, std::placeholders::_1));
-    _connector.set_disconnected_cb(std::bind(&TcpClient::handle_disconnected, this, std::placeholders::_1));
+    if (connector != nullptr)
+    {
+        _connector = std::move(connector);
+    }
+    else
+    {
+        _connector = std::make_unique<TcpConnector>(event_loop, client_name + ":connector");
+    }
+    _connector->set_newconn_cb(std::bind(&TcpClient::handle_new_connection, this, std::placeholders::_1));
+    _connector->set_disconnected_cb(std::bind(&TcpClient::handle_disconnected, this, std::placeholders::_1));
 
     LOG(DEBUG) << "client:" << _name << " has been created" << std::endl;
 }
-
 TcpClient::~TcpClient()
 {
     {
@@ -58,7 +66,7 @@ bool TcpClient::connect(const std::string& server_ip, int server_port)
     bool ret = false;
 
     // FIXME: What happens if the user calls repeatedly?
-    ret = _connector.connect(server_ip, server_port);
+    ret = _connector->connect(server_ip, server_port);
 
     return ret;
 }
@@ -97,7 +105,6 @@ void TcpClient::handle_disconnected(TcpConnPtr conn)
     {
         _disconnected_cb(conn);
     }
-    
 }
 
 void TcpClient::handle_message(TcpConnPtr conn, const uint8_t *data, size_t size)

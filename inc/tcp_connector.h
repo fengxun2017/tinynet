@@ -17,9 +17,9 @@ class TcpConnector {
 public:
     TcpConnector(EventLoop *event_loop, std::string name);
 
-    ~TcpConnector();
+    virtual ~TcpConnector();
 
-    bool connect(const std::string &server_ip, int server_port, std::unique_ptr<IoSocket> connector_socket = nullptr);
+    virtual bool connect(const std::string &server_ip, int server_port, std::unique_ptr<IoSocket> connector_socket = nullptr);
 
     void set_newconn_cb(TcpConnectorNewConnCb newconn_cb) {
         _newconn_cb = newconn_cb;

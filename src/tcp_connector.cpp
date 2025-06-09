@@ -58,7 +58,6 @@ bool TcpConnector::connect(const std::string& server_ip, int server_port, std::u
 
     if (connector_socket != nullptr)
     {
-        LOG(INFO) << "debug test" << std::endl;
         _connector_socket = std::move(connector_socket);
     }
     else

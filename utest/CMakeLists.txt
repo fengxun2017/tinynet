@@ -45,6 +45,7 @@ set(TARGETS test_event_loop
             test_wakeup_poller
             test_io_socket
             test_tcp_connector
+            test_tcp_client
             )
 foreach(target ${TARGETS})
     add_executable(${target} ${target}.cpp ${COMM_SOURCE_FILES})  # 假设每个目标的源文件与目标同名

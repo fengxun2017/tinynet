@@ -27,16 +27,20 @@ using TcpConnPtr = std::shared_ptr<TcpConnection>;
 class TcpConnection : public std::enable_shared_from_this<TcpConnection>
 {
 public:
+    using TcpConnDisconnectedCb = std::function<void(TcpConnPtr)>;
+    using TcpConnOnMessageCb = std::function<void(TcpConnPtr, const uint8_t *, size_t)>;
+    using TcpConnWriteCompleteCb = std::function<void(TcpConnPtr)>;
+    
     TcpConnection(std::unique_ptr<IoSocket> socket, const std::string& client_ip, int client_port,
                 const std::string& server_ip, int server_port,
                 EventLoop *event_loop, std::string name);
 
     ~TcpConnection();
 
-    void write_data(const void* buffer, size_t length);
-    void set_disconnected_cb(std::function<void(TcpConnPtr)> disconected_cb) {_disconected_cb = disconected_cb;}
-    void set_onmessage_cb(std::function<void(TcpConnPtr, const uint8_t *, size_t )> on_message_cb) {_on_message_cb = on_message_cb;}
-    void set_write_complete_cb(std::function<void(TcpConnPtr)> write_complete_cb) { _write_complete_cb = write_complete_cb;}
+    virtual void write_data(const void* buffer, size_t length);
+    virtual void set_disconnected_cb(TcpConnDisconnectedCb disconected_cb) {_disconected_cb = disconected_cb;}
+    virtual void set_onmessage_cb(TcpConnOnMessageCb on_message_cb) {_on_message_cb = on_message_cb;}
+    virtual void set_write_complete_cb(TcpConnWriteCompleteCb write_complete_cb) { _write_complete_cb = write_complete_cb;}
     int get_fd(void) {return _channel->get_fd();}
 
     std::string get_client_ip(void) { return _client_ip;}
@@ -44,9 +48,9 @@ public:
 
     std::string get_name(void) {return _name;}
 
-    void enable_read(void) {_channel->enable_read();}
+    virtual void enable_read(void) {_channel->enable_read();}
     void enable_write(void) {_channel->enable_write();}
-    void disable_conn(void);
+    virtual void disable_conn(void);
 
     void set_context(const std::any &context) { _context = context; }
     std::any &get_context()  { return _context; }

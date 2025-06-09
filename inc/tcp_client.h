@@ -17,7 +17,9 @@ public:
     using TcpClientOnMessageCb = std::function<void(TcpConnPtr&, const uint8_t *data, size_t size)>;
     using TcpClientWriteCompleteCb = std::function<void(TcpConnPtr&)>;
 
-    TcpClient(EventLoop *event_loop, const std::string &client_name);
+    TcpClient(EventLoop* event_loop, 
+             const std::string& client_name,
+             std::unique_ptr<TcpConnector> connector = nullptr);  // Allow injection
 
     ~TcpClient();
 
@@ -42,11 +44,15 @@ public:
         _write_complete_cb = write_complete_cb;
     }
 
+    bool is_connected() {
+        std::lock_guard<std::mutex> lock(_conn_mutex);
+        return _conn != nullptr;
+    }
 private:
 
-    void handle_new_connection(TcpConnPtr conn);
+    virtual void handle_new_connection(TcpConnPtr conn);
 
-    void handle_disconnected(TcpConnPtr conn);
+    virtual void handle_disconnected(TcpConnPtr conn);
 
     void handle_message(TcpConnPtr conn, const uint8_t *data, size_t size);
 
@@ -56,7 +62,7 @@ private:
     std::string _remote_ip;
     int _remote_port;
     EventLoop *_event_loop;
-    TcpConnector _connector;
+    std::unique_ptr<TcpConnector> _connector;
     TcpConnPtr _conn= nullptr;
     std::mutex  _conn_mutex;
     TcpClientNewConnCb _newconn_cb = nullptr;
